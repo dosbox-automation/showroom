@@ -1,0 +1,51 @@
+# Generated once from showroom-games-sources.csv by tools/csv_to_games.py.
+# This file is the source of truth for the game and is maintained by hand
+# from here on: the generator will not overwrite it without --force.
+#
+# Revolution freeware release; verify DOS-version terms (ada-l996). Source ISO (SKY.iso) has mangled filenames (underscores instead of dots) - use mirror ISO (Virgin 1995 original) for install.
+
+slug = "bass"
+title = "Beneath a Steel Sky"
+rank = 7
+license = "freeware"
+recipe_status = "todo"
+
+[sources.primary]
+role = "primary"
+install_type = "isoinstall"
+url = "https://archive.org/download/sky_20251118/SKY.iso"
+
+[sources.mirror]
+role = "mirror"
+install_type = "isoinstall"
+url = "https://archive.org/download/Beneath_a_Steel_Sky_1995_Virgin/Beneath%20a%20Steel%20Sky%20%281995%29%28Virgin%29.iso"
+
+# Starting point from the drive rig, which ran every game at these
+# settings. Tune per game where the game needs it.
+[dosbox]
+machine = "svga_s3"
+cpu_cycles = 12000
+cpu_cycles_protected = 12000
+
+[dosbox.sound]
+sblaster_type = "sb16"
+mpu401 = "intelligent"
+midi_device = "fluidsynth"
+
+# HAND-FILLED. An empty executable means the game has no recipe yet;
+# the showroom shows the tile but refuses to launch it.
+[launch]
+executable = ""
+working_dir = ""
+setup_exe = ""
+
+[screenshots]
+title = "title.png"
+gameplay = "gameplay.png"
+
+[install]
+max_runtime_seconds = 120
+
+# HAND-FILLED. Files that must exist after a successful install,
+# checked before every launch. Sound config files vary - leave them out.
+[install.expected_files]

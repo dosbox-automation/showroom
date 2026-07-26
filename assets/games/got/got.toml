@@ -1,0 +1,52 @@
+# Generated once from showroom-games-sources.csv by tools/csv_to_games.py.
+# This file is the source of truth for the game and is maintained by hand
+# from here on: the generator will not overwrite it without --force.
+#
+# freeware claim needs terms text pulled (ada-l996)
+
+slug = "got"
+title = "God of Thunder"
+rank = 16
+version = "1.1"
+license = "freeware"
+recipe_status = "todo"
+
+[sources.primary]
+role = "primary"
+install_type = "unzip"
+url = "https://www.classicdosgames.com/files/games/cse/gotfree.zip"
+
+[sources.mirror]
+role = "mirror"
+install_type = "unzip"
+url = "https://dosgames.com/files/gotfree.zip"
+
+# Starting point from the drive rig, which ran every game at these
+# settings. Tune per game where the game needs it.
+[dosbox]
+machine = "svga_s3"
+cpu_cycles = 12000
+cpu_cycles_protected = 12000
+
+[dosbox.sound]
+sblaster_type = "sb16"
+mpu401 = "intelligent"
+midi_device = "fluidsynth"
+
+# HAND-FILLED. An empty executable means the game has no recipe yet;
+# the showroom shows the tile but refuses to launch it.
+[launch]
+executable = ""
+working_dir = ""
+setup_exe = ""
+
+[screenshots]
+title = "title.png"
+gameplay = "gameplay.png"
+
+[install]
+max_runtime_seconds = 120
+
+# HAND-FILLED. Files that must exist after a successful install,
+# checked before every launch. Sound config files vary - leave them out.
+[install.expected_files]
