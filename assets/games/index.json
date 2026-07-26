@@ -1,0 +1,82 @@
+[
+  {
+    "rank": 1,
+    "slug": "doom",
+    "title": "DOOM"
+  },
+  {
+    "rank": 2,
+    "slug": "epinball",
+    "title": "Epic Pinball"
+  },
+  {
+    "rank": 3,
+    "slug": "tyrian",
+    "title": "Tyrian"
+  },
+  {
+    "rank": 4,
+    "slug": "ckeen4",
+    "title": "Commander Keen 4"
+  },
+  {
+    "rank": 5,
+    "slug": "ttycoon",
+    "title": "Transport Tycoon"
+  },
+  {
+    "rank": 6,
+    "slug": "omf2097",
+    "title": "One Must Fall 2097"
+  },
+  {
+    "rank": 7,
+    "slug": "bass",
+    "title": "Beneath a Steel Sky"
+  },
+  {
+    "rank": 8,
+    "slug": "jazz",
+    "title": "Jazz Jackrabbit"
+  },
+  {
+    "rank": 9,
+    "slug": "rayman",
+    "title": "Rayman"
+  },
+  {
+    "rank": 10,
+    "slug": "duke3d",
+    "title": "Duke Nukem 3D"
+  },
+  {
+    "rank": 11,
+    "slug": "fotaq",
+    "title": "Flight of the Amazon Queen"
+  },
+  {
+    "rank": 12,
+    "slug": "wwheels",
+    "title": "Wacky Wheels"
+  },
+  {
+    "rank": 13,
+    "slug": "heretic",
+    "title": "Heretic"
+  },
+  {
+    "rank": 14,
+    "slug": "dhack",
+    "title": "Dungeon Hack"
+  },
+  {
+    "rank": 15,
+    "slug": "warcraft2",
+    "title": "Warcraft 2"
+  },
+  {
+    "rank": 16,
+    "slug": "got",
+    "title": "God of Thunder"
+  }
+]

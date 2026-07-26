@@ -1,0 +1,29 @@
+{
+  "slug": "wwheels",
+  "title": "Wacky Wheels",
+  "rank": 12,
+  "version": "1.1",
+  "license": "shareware",
+  "recipe_status": "todo",
+  "sources": [
+    {
+      "role": "primary",
+      "install_type": "unzip",
+      "url": "https://dosgames.com/files/DOSBOX_WACKY.ZIP",
+      "filename": null,
+      "sha256": null
+    },
+    {
+      "role": "mirror",
+      "install_type": "unzipinstall",
+      "url": "https://www.classicdosgames.com/files/games/beavis-soft/1wacky.zip",
+      "filename": null,
+      "sha256": null
+    }
+  ],
+  "screenshots": {
+    "menu": false,
+    "gameplay": false
+  },
+  "notes": "candidate: https://dosgames.com/game/wacky-wheels/"
+}

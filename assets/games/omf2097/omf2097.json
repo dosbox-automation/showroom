@@ -1,0 +1,29 @@
+{
+  "slug": "omf2097",
+  "title": "One Must Fall 2097",
+  "rank": 6,
+  "version": "2.1",
+  "license": "freeware",
+  "recipe_status": "done",
+  "sources": [
+    {
+      "role": "primary",
+      "install_type": "exeinstall",
+      "url": "https://archive.org/download/TOEMGSWC/EPICSWCD96/EPIC/OMFSW21.EXE",
+      "filename": null,
+      "sha256": null
+    },
+    {
+      "role": "mirror",
+      "install_type": "exeinstall",
+      "url": "https://archive.org/download/one-must-fall-2097-shareware-jukebox-collection",
+      "filename": null,
+      "sha256": null
+    }
+  ],
+  "screenshots": {
+    "menu": false,
+    "gameplay": false
+  },
+  "notes": "Epic freeware'd 1999; candidate: https://dosgames.com/game/one-must-fall-2097/"
+}

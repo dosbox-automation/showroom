@@ -1,0 +1,29 @@
+{
+  "slug": "jazz",
+  "title": "Jazz Jackrabbit",
+  "rank": 8,
+  "version": "1.1",
+  "license": "shareware",
+  "recipe_status": "todo",
+  "sources": [
+    {
+      "role": "primary",
+      "install_type": "exeinstall",
+      "url": "https://archive.org/download/TOEMGSWC/EPICSWCD96/EPIC/JAZZSW11.EXE",
+      "filename": null,
+      "sha256": null
+    },
+    {
+      "role": "mirror",
+      "install_type": "unzipinstall",
+      "url": "https://www.classicdosgames.com/files/games/epic/1jazz11.zip",
+      "filename": null,
+      "sha256": null
+    }
+  ],
+  "screenshots": {
+    "menu": false,
+    "gameplay": false
+  },
+  "notes": "easy tier (unzip+run)"
+}

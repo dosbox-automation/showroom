@@ -1,0 +1,29 @@
+{
+  "slug": "doom",
+  "title": "DOOM",
+  "rank": 1,
+  "version": "1.666",
+  "license": "shareware",
+  "recipe_status": "done",
+  "sources": [
+    {
+      "role": "primary",
+      "install_type": "floppyinstall",
+      "url": "https://archive.org/download/doom-shareware-floppy-v-1.666-2-disk.-7z/Doom%20Shareware%20Floppy%20%28v1.666%29%20%5B2%20Disk%5D.7z",
+      "filename": null,
+      "sha256": null
+    },
+    {
+      "role": "mirror",
+      "install_type": "isoinstall",
+      "url": "https://archive.org/download/shareware_202206/SHAREWARE.iso",
+      "filename": null,
+      "sha256": null
+    }
+  ],
+  "screenshots": {
+    "menu": true,
+    "gameplay": true
+  },
+  "notes": "gold release, other versions (not compatible with our script): https://www.doomworld.com/forum/topic/119164-doom-shareware-floppy-disk-archive/"
+}

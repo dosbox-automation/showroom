@@ -1,0 +1,29 @@
+{
+  "slug": "ckeen4",
+  "title": "Commander Keen 4",
+  "rank": 4,
+  "version": null,
+  "license": "shareware",
+  "recipe_status": "todo",
+  "sources": [
+    {
+      "role": "primary",
+      "install_type": "floppyinstall",
+      "url": "https://archive.org/download/commander-keen-4-distant-markets-release/Commander%20Keen%204%20-%20Distant%20Markets%20release.img",
+      "filename": null,
+      "sha256": null
+    },
+    {
+      "role": "mirror",
+      "install_type": "unzip",
+      "url": "https://dosgames.com/files/DOSBOX_KEEN4.ZIP",
+      "filename": null,
+      "sha256": null
+    }
+  ],
+  "screenshots": {
+    "menu": true,
+    "gameplay": true
+  },
+  "notes": "Goodbye Galaxy shareware episode; never freeware'd"
+}

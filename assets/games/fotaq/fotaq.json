@@ -1,0 +1,29 @@
+{
+  "slug": "fotaq",
+  "title": "Flight of the Amazon Queen",
+  "rank": 11,
+  "version": null,
+  "license": "freeware",
+  "recipe_status": "todo",
+  "sources": [
+    {
+      "role": "primary",
+      "install_type": "floppyinstall",
+      "url": "https://archive.org/download/001262-FlightOfTheAmazonQueen/001262_flight_of_the_amazon_queen.7z/",
+      "filename": null,
+      "sha256": null
+    },
+    {
+      "role": "mirror",
+      "install_type": "unzip",
+      "url": "https://www.classicdosgames.com/files/games/geewhiz/amazon.zip",
+      "filename": null,
+      "sha256": null
+    }
+  ],
+  "screenshots": {
+    "menu": false,
+    "gameplay": false
+  },
+  "notes": "secondary is just demo"
+}

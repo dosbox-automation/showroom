@@ -1,0 +1,29 @@
+{
+  "slug": "dhack",
+  "title": "Dungeon Hack",
+  "rank": 14,
+  "version": null,
+  "license": "demo",
+  "recipe_status": "todo",
+  "sources": [
+    {
+      "role": "primary",
+      "install_type": "unzip",
+      "url": "https://archive.org/download/DungeonHackDemo/hackdemo.zip",
+      "filename": null,
+      "sha256": null
+    },
+    {
+      "role": "mirror",
+      "install_type": "unzip",
+      "url": "https://dosgames.com/files/hackdemo.zip",
+      "filename": null,
+      "sha256": null
+    }
+  ],
+  "screenshots": {
+    "menu": false,
+    "gameplay": false
+  },
+  "notes": "candidate: https://dosgames.com/game/dungeon-hack/ ; SSI installer RE'd in-house"
+}

@@ -1,0 +1,29 @@
+{
+  "slug": "epinball",
+  "title": "Epic Pinball",
+  "rank": 2,
+  "version": "2.1",
+  "license": "shareware",
+  "recipe_status": "todo",
+  "sources": [
+    {
+      "role": "primary",
+      "install_type": "exeinstall",
+      "url": "https://archive.org/download/TOEMGSWC/EPICSWCD96/EPIC/EPICPN21.EXE",
+      "filename": null,
+      "sha256": null
+    },
+    {
+      "role": "mirror",
+      "install_type": "unzip",
+      "url": "https://www.classicdosgames.com/files/games/epic/epicpn21.zip",
+      "filename": null,
+      "sha256": null
+    }
+  ],
+  "screenshots": {
+    "menu": false,
+    "gameplay": false
+  },
+  "notes": "candidate: https://www.classicdosgames.com/files/games/epic/epicpn21.zip ; also on dosgames.com"
+}

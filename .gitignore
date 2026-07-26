@@ -1,0 +1,14 @@
+# Screen recordings from the install and screenshot sessions. Kept
+# locally, too large for the repo.
+assets/recordings/
+
+# Downloaded archives and installed games. Reproducible from the game
+# definitions, hundreds of megabytes, never tracked.
+.games-cache/
+
+# Build output
+build/
+
+# Python tooling caches
+.pytest_cache/
+.ruff_cache/

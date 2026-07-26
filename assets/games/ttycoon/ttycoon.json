@@ -1,0 +1,29 @@
+{
+  "slug": "ttycoon",
+  "title": "Transport Tycoon",
+  "rank": 5,
+  "version": null,
+  "license": "demo",
+  "recipe_status": "todo",
+  "sources": [
+    {
+      "role": "primary",
+      "install_type": "unzip",
+      "url": "https://www.classicdosgames.com/files/games/chrissawyer/tntdem.zip",
+      "filename": null,
+      "sha256": null
+    },
+    {
+      "role": "mirror",
+      "install_type": "unzip",
+      "url": "https://dosgames.com/files/DOSBOX_TTYCOON.ZIP",
+      "filename": null,
+      "sha256": null
+    }
+  ],
+  "screenshots": {
+    "menu": false,
+    "gameplay": false
+  },
+  "notes": "candidate: https://www.classicdosgames.com/game/Transport_Tycoon.html"
+}

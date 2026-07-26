@@ -1,0 +1,29 @@
+{
+  "slug": "rayman",
+  "title": "Rayman",
+  "rank": 9,
+  "version": null,
+  "license": "demo",
+  "recipe_status": "todo",
+  "sources": [
+    {
+      "role": "primary",
+      "install_type": "unzip",
+      "url": "https://dosgames.com/files/raymandemo.zip",
+      "filename": null,
+      "sha256": null
+    },
+    {
+      "role": "mirror",
+      "install_type": "unzip",
+      "url": "https://www.classicdosgames.com/files/games/ubisoft/raydemo.exe",
+      "filename": null,
+      "sha256": null
+    }
+  ],
+  "screenshots": {
+    "menu": false,
+    "gameplay": false
+  },
+  "notes": "candidate: https://dosgames.com/game/rayman/"
+}

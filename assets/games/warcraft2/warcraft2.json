@@ -1,0 +1,29 @@
+{
+  "slug": "warcraft2",
+  "title": "Warcraft 2",
+  "rank": 15,
+  "version": "1.08sh",
+  "license": "demo",
+  "recipe_status": "todo",
+  "sources": [
+    {
+      "role": "primary",
+      "install_type": "isoinstall",
+      "url": "https://archive.org/download/War2TOD-Demo-108sh/War2Demo_v108sh.iso/",
+      "filename": null,
+      "sha256": null
+    },
+    {
+      "role": "mirror",
+      "install_type": "unzip",
+      "url": "https://dosgames.com/files/DOSBOX_WAR2.ZIP",
+      "filename": null,
+      "sha256": null
+    }
+  ],
+  "screenshots": {
+    "menu": true,
+    "gameplay": true
+  },
+  "notes": "demo to source"
+}

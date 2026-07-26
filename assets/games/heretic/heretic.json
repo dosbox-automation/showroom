@@ -1,0 +1,29 @@
+{
+  "slug": "heretic",
+  "title": "Heretic",
+  "rank": 13,
+  "version": "1",
+  "license": "shareware",
+  "recipe_status": "todo",
+  "sources": [
+    {
+      "role": "primary",
+      "install_type": "isoinstall",
+      "url": "https://archive.org/download/shareware_202206/SHAREWARE.iso",
+      "filename": null,
+      "sha256": null
+    },
+    {
+      "role": "mirror",
+      "install_type": "unzipinstall",
+      "url": "https://www.classicdosgames.com/files/games/raven/htic_v10.zip",
+      "filename": null,
+      "sha256": null
+    }
+  ],
+  "screenshots": {
+    "menu": false,
+    "gameplay": false
+  },
+  "notes": "setup-driving showcase"
+}
