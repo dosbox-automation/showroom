@@ -58,8 +58,22 @@ main() {
 
     # Our own headers are checked through the files that include them;
     # everything else (Qt, toml++, gtest) is somebody else's naming.
+    #
+    # imported/ has to be excluded here as well as from the file list.
+    # Leaving it out of the list only stops it being a subject; the
+    # moment one of our own files includes the header, its naming is
+    # reported against whichever file pulled it in. The exemption has to
+    # cover both or it only holds until someone uses the code.
+    #
+    # --exclude-header-filter, not a negative lookahead in the include
+    # pattern: clang-tidy compiles these with LLVM's regex engine, which
+    # has no lookahead. An unsupported pattern does not fail loudly, it
+    # matches nothing, and the run then reports every file clean while
+    # inspecting no header at all. Verified by putting a deliberately
+    # wrong name in a header and watching it get caught.
     clang-tidy -p "$build_dir" --warnings-as-errors='*' \
-        --header-filter='(src|tests)/.*' "${files[@]}"
+        --header-filter='(src|tests)/.*' \
+        --exclude-header-filter='.*/imported/.*' "${files[@]}"
     printf 'clang-tidy: clean across %s files\n' "${#files[@]}"
 }
 
