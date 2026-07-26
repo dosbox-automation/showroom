@@ -19,8 +19,16 @@ die() {
     exit 1
 }
 
+# See format-cpp.sh: --others is what stops new, uncommitted code from
+# being skipped while the run still reports success.
+# Files copied verbatim from sibling house projects live under imported/.
+# They keep their origin's naming and formatting on purpose, so a fix
+# crosses between trees as a plain diff. Checking them would only report
+# that they are not ours.
 list_cpp_files() {
-    git ls-files -z -- 'src/*.cpp' 'tests/*.cpp'
+    git ls-files -z --cached --others --exclude-standard \
+        -- 'src/*.cpp' 'tests/*.cpp' \
+           ':(exclude)*/imported/*'
 }
 
 main() {

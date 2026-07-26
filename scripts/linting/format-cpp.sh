@@ -49,10 +49,18 @@ assert_version() {
     printf 'Using %s\n' "$version"
 }
 
-# Tracked files only: scratch copies under .workspace/ and anything in a
-# build directory are none of our business.
+# Tracked files plus new ones git does not ignore. --others matters: a
+# file written this session is untracked, and checking only what is
+# tracked means brand new code is silently skipped and the run still
+# reports clean. --exclude-standard keeps .workspace/ and build/ out.
+# Files copied verbatim from sibling house projects live under imported/.
+# They keep their origin's naming and formatting on purpose, so a fix
+# crosses between trees as a plain diff. Checking them would only report
+# that they are not ours.
 list_cpp_files() {
-    git ls-files -z -- 'src/*.cpp' 'src/*.h' 'tests/*.cpp' 'tests/*.h'
+    git ls-files -z --cached --others --exclude-standard \
+        -- 'src/*.cpp' 'src/*.h' 'tests/*.cpp' 'tests/*.h' \
+           ':(exclude)*/imported/*'
 }
 
 main() {

@@ -28,8 +28,10 @@ require_tool() {
         || die "$tool not found in $VENV. Install it there, or point SHOWROOM_VENV elsewhere."
 }
 
+# See format-cpp.sh: --others is what stops new, uncommitted code from
+# being skipped while the run still reports success.
 list_python_files() {
-    git ls-files -z -- '*.py'
+    git ls-files -z --cached --others --exclude-standard -- '*.py'
 }
 
 main() {
