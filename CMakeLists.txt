@@ -49,6 +49,8 @@ add_library(showroom_model STATIC
   src/imported/log.cpp
   src/model/game_definition.cpp
   src/model/game_catalog.cpp
+  src/model/tile_state.cpp
+  src/model/step_sizer.cpp
 )
 
 target_include_directories(showroom_model PUBLIC src)
@@ -57,14 +59,47 @@ target_link_libraries(showroom_model PUBLIC
   tomlplusplus::tomlplusplus
 )
 
+# The version of the engine this build bundles. It is the badge in the
+# sidebar, so the release train sets it in one place rather than leaving
+# a literal to go stale in a widget.
+set(SHOWROOM_ENGINE_VERSION "0.84-da3" CACHE STRING
+    "Version string of the bundled dosbox-automation")
+
+# Widgets and everything that needs Qt. Kept a library rather than
+# folded into the executable so the UI tests can link it without
+# rebuilding it, and so showroom_model stays provably Qt-free.
+qt_add_library(showroom_ui STATIC
+  src/app/paths.cpp
+  src/app/settings.cpp
+  src/ui/about_dialog.cpp
+  src/ui/game_tile.cpp
+  src/ui/legend_bar.cpp
+  src/ui/main_window.cpp
+  src/ui/sidebar.cpp
+  src/ui/theme.cpp
+  src/ui/tile_grid.cpp
+)
+
+target_link_libraries(showroom_ui PUBLIC
+  showroom_model
+  Qt6::Widgets
+  Qt6::Network
+)
+
+target_compile_definitions(showroom_ui PUBLIC
+  SHOWROOM_VERSION="${PROJECT_VERSION}"
+  SHOWROOM_ENGINE_VERSION="${SHOWROOM_ENGINE_VERSION}"
+  # Last resort for a developer build run straight out of the build
+  # directory, where nothing has been installed beside the binary yet.
+  SHOWROOM_SOURCE_ASSETS_DIR="${CMAKE_SOURCE_DIR}/assets"
+)
+
 qt_add_executable(showroom
   src/main.cpp
 )
 
 target_link_libraries(showroom PRIVATE
-  showroom_model
-  Qt6::Widgets
-  Qt6::Network
+  showroom_ui
 )
 
 option(OPT_TESTS "Enable tests" ON)
