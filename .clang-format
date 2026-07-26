@@ -1,0 +1,174 @@
+# Formatting rules for the showroom's own C++.
+#
+# Adapted from dosbox-automation's .clang-format rather than copied from
+# it. That file is inherited from dosbox-staging and describes a
+# C-derived codebase: tabs indented eight wide, wrapped at eighty
+# columns. The showroom has no inherited code and is a Qt application,
+# where eight-wide indentation and an eighty column limit spend most of
+# a line on whitespace and type names.
+#
+# What carries over unchanged is everything that is not about width: the
+# brace style, pointer and qualifier alignment, the "no short bodies on
+# one line" rules, and the line-breaking penalties. What diverges is
+# listed under "Divergence from the engine" at the bottom, with reasons.
+#
+# Written against clang-format 19. Every option used here has existed
+# since 15, so an older clang-format will still do the right thing.
+
+Language: Cpp
+Standard: Latest
+
+# Four spaces, no tabs. The engine indents with tabs because
+# dosbox-staging does; nothing here inherits that, and Qt code is
+# conventionally space-indented.
+UseTab: Never
+IndentWidth: 4
+TabWidth: 4
+ContinuationIndentWidth: 8
+AccessModifierOffset: -4
+
+# Ninety rather than eighty. The tree already sits just under ninety
+# without contortions, and the common long line is a declaration like
+# std::optional<GameDefinition> fromToml(const std::filesystem::path&,
+# which eighty columns can only break unhelpfully.
+ColumnLimit: 90
+
+# Qualifiers and pointers bind to the type, not the name.
+#
+#   const int& value;   NOT   int const &value;
+#
+PointerAlignment: Left
+ReferenceAlignment: Left
+QualifierAlignment: Left
+
+# K&R: the brace of a function body goes on its own line, every other
+# brace attaches to the statement that opens it.
+#
+#   void foo()
+#   {
+#       if (true) {
+#       } else {
+#       }
+#   }
+#
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: false
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterFunction: true
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: false
+  BeforeCatch: false
+  BeforeElse: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: true
+
+# A body on the same line as its condition hides control flow from a
+# skimming reader, and hides an added second statement from review.
+# Trivial accessors are the one exception: a class of them reads better
+# as a block than as thirty lines of braces.
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortLambdasOnASingleLine: All
+
+# A single-statement if without braces is one careless edit away from a
+# bug. clang-format adds the braces rather than leaving it to review.
+InsertBraces: true
+
+AlwaysBreakTemplateDeclarations: Yes
+AlwaysBreakBeforeMultilineStrings: true
+
+# A wrapped expression carries its operator to the next line, so the
+# continuation announces itself instead of looking like a new statement.
+#
+#   return fail(std::string(context) + ": " + std::string(key)
+#               + " must be a string");
+#
+BreakBeforeBinaryOperators: NonAssignment
+AlignOperands: AlignAfterOperator
+
+# Either all arguments on one line, or one per line - never a ragged
+# fill that reshuffles when one argument is renamed.
+BinPackArguments: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+AlignAfterOpenBracket: Align
+
+#   Constructor()
+#           : first_(),
+#             second_()
+#   {}
+BreakConstructorInitializers: BeforeColon
+PackConstructorInitializers: CurrentLine
+ConstructorInitializerIndentWidth: 8
+
+# Case labels are goto labels; the body is what gets the indent.
+IndentCaseLabels: false
+IndentPPDirectives: None
+
+SpaceAfterCStyleCast: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpacesBeforeTrailingComments: 1
+
+MaxEmptyLinesToKeep: 1
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+# Breaking a string literal is almost always worse than the long line;
+# where it matters the author splits it deliberately.
+BreakStringLiterals: false
+
+# Backslash continuations left where they are: aligning them makes every
+# macro edit touch neighbouring lines, and the alignment collapses in an
+# editor set to a different tab width.
+AlignEscapedNewlines: DontAlign
+
+# Include order is the house order - the module's own header first, then
+# third-party (Qt, toml++, gtest), then the standard library, separated
+# by blank lines. It is kept by hand: clang-format sorts inside a block
+# and cannot express "the header this file implements comes first"
+# reliably enough to be worth an automatic reorder.
+SortIncludes: Never
+
+# Which formatting to prefer when a line has to break somewhere.
+PenaltyBreakAssignment: 100
+PenaltyBreakBeforeFirstCallParameter: 100
+PenaltyBreakComment: 10
+PenaltyBreakFirstLessLess: 0
+PenaltyBreakString: 110
+PenaltyExcessCharacter: 100
+PenaltyReturnTypeOnItsOwnLine: 200
+
+# Divergence from the engine's .clang-format, all of it deliberate:
+#
+#   UseTab            ForIndentation -> Never
+#   IndentWidth       8              -> 4
+#   TabWidth          8              -> 4
+#   AccessModifierOffset -8          -> -4
+#   ColumnLimit       80             -> 90
+#     The engine inherits dosbox-staging's C formatting. This project
+#     inherits nothing.
+#
+#   AlignConsecutiveMacros      Consecutive -> unset
+#   AlignConsecutiveAssignments Consecutive -> unset
+#   AlignArrayOfStructures      Right       -> unset
+#     Column alignment makes an unrelated line move whenever its
+#     neighbour grows, which pads diffs and buries the real change. The
+#     engine wants it for tables of hardware constants; there are none
+#     here.
+#
+#   PenaltyExcessCharacter 3 -> 100
+#     The engine's low penalty lets a line drift past the limit rather
+#     than break, which at eighty columns is a deliberate bit of slack.
+#     Carried over unchanged it would make the ninety here mean roughly
+#     a hundred, so the limit is enforced instead of suggested.
