@@ -11,7 +11,7 @@
 namespace showroom {
 namespace {
 
-int compare_ignoring_case(std::string_view a, std::string_view b)
+int compareIgnoringCase(std::string_view a, std::string_view b)
 {
     const auto common = std::min(a.size(), b.size());
     for (std::size_t i = 0; i < common; ++i) {
@@ -29,9 +29,9 @@ int compare_ignoring_case(std::string_view a, std::string_view b)
 
 } // namespace
 
-bool title_precedes(const GameDefinition& a, const GameDefinition& b)
+bool titlePrecedes(const GameDefinition& a, const GameDefinition& b)
 {
-    const auto by_title = compare_ignoring_case(a.title(), b.title());
+    const auto by_title = compareIgnoringCase(a.title(), b.title());
     if (by_title != 0) {
         return by_title < 0;
     }
@@ -83,7 +83,7 @@ GameCatalog GameCatalog::loadFromDirectory(const std::filesystem::path& games_di
         catalog.games_.push_back(std::move(*game));
     }
 
-    std::sort(catalog.games_.begin(), catalog.games_.end(), title_precedes);
+    std::sort(catalog.games_.begin(), catalog.games_.end(), titlePrecedes);
     return catalog;
 }
 

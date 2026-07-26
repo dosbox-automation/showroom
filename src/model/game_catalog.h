@@ -55,7 +55,7 @@ private:
 // Display order: by title, ignoring case, so "Epic Pinball" does not sort
 // away from "epic pinball". Ties fall back to the slug, which is unique,
 // so the order never depends on how the filesystem enumerates.
-bool title_precedes(const GameDefinition& a, const GameDefinition& b);
+bool titlePrecedes(const GameDefinition& a, const GameDefinition& b);
 
 } // namespace showroom
 

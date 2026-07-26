@@ -87,7 +87,7 @@ public:
     int rank() const { return rank_; }
     const std::string& version() const { return version_; }
     License license() const { return license_; }
-    RecipeStatus recipe_status() const { return recipe_status_; }
+    RecipeStatus recipeStatus() const { return recipe_status_; }
     const std::vector<GameSource>& sources() const { return sources_; }
     const DosboxSettings& dosbox() const { return dosbox_; }
     const LaunchSettings& launch() const { return launch_; }
@@ -96,7 +96,7 @@ public:
 
     // A definition with no launch executable has no recipe yet: the tile
     // is shown, the Play button is not offered.
-    bool is_launchable() const { return !launch_.executable.empty(); }
+    bool isLaunchable() const { return !launch_.executable.empty(); }
 
 private:
     GameDefinition() = default;
@@ -118,19 +118,19 @@ private:
 // tools/csv_to_games.py enforces on the way out: lowercase alphanumeric
 // plus - and _, starting with a letter or digit. Stricter than a path
 // component on purpose - the two rules are not interchangeable.
-bool is_safe_slug(std::string_view value);
+bool isSafeSlug(std::string_view value);
 
 // Exposed for the catalogue and for tests: a name that is safe to append
 // to a path. Rejects empty, absolute, traversal, separators and anything
 // outside a conservative character set.
-bool is_safe_path_component(std::string_view value);
+bool isSafePathComponent(std::string_view value);
 
 // Same, for a relative multi-segment path such as "GOLD/DOOM". An empty
 // value is allowed: it means the install root itself.
-bool is_safe_relative_path(std::string_view value);
+bool isSafeRelativePath(std::string_view value);
 
-std::optional<License> license_from_string(std::string_view value);
-std::optional<InstallType> install_type_from_string(std::string_view value);
+std::optional<License> licenseFromString(std::string_view value);
+std::optional<InstallType> installTypeFromString(std::string_view value);
 
 } // namespace showroom
 

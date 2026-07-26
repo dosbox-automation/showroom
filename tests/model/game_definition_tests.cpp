@@ -21,7 +21,7 @@ const std::filesystem::path kDoomToml = "assets/games/doom/doom.toml";
 
 // A minimal valid definition. Tests override one thing at a time by
 // swapping a fragment, so each failure names exactly one cause.
-std::string minimal_toml(const std::string& extra = {})
+std::string minimalToml(const std::string& extra = {})
 {
     return R"(
 slug = "doom"
@@ -29,7 +29,7 @@ title = "DOOM"
 rank = 1
 version = "1.666"
 license = "shareware"
-recipe_status = "done"
+recipeStatus = "done"
 
 [sources.primary]
 role = "primary"
@@ -64,7 +64,7 @@ max_runtime_seconds = 120
 // "sub\DOOM.EXE" dies in the parser as an unknown escape and never
 // reaches the validator under test. Escape it so the validator sees a
 // genuine backslash.
-std::string toml_escaped(const std::string& value)
+std::string tomlEscaped(const std::string& value)
 {
     std::string out;
     for (const char c : value) {
@@ -77,9 +77,9 @@ std::string toml_escaped(const std::string& value)
 }
 
 // Replaces the first occurrence, so a test can bend exactly one field.
-std::string with_replacement(const std::string& needle, const std::string& replacement)
+std::string withReplacement(const std::string& needle, const std::string& replacement)
 {
-    std::string toml = minimal_toml();
+    std::string toml = minimalToml();
     const auto pos = toml.find(needle);
     EXPECT_NE(pos, std::string::npos) << "fixture no longer contains " << needle;
     return toml.replace(pos, needle.size(), replacement);
@@ -100,7 +100,7 @@ TEST(GameDefinition, parses_the_real_doom_definition)
     EXPECT_EQ(doom->rank(), 1);
     EXPECT_EQ(doom->version(), "1.666");
     EXPECT_EQ(doom->license(), License::Shareware);
-    EXPECT_EQ(doom->recipe_status(), RecipeStatus::Done);
+    EXPECT_EQ(doom->recipeStatus(), RecipeStatus::Done);
     EXPECT_EQ(doom->dosbox().machine, "svga_s3");
     EXPECT_EQ(doom->dosbox().cpu_cycles, 12000);
     EXPECT_EQ(doom->dosbox().cpu_cycles_protected, 12000);
@@ -108,7 +108,7 @@ TEST(GameDefinition, parses_the_real_doom_definition)
     EXPECT_EQ(doom->launch().executable, "DOOM.EXE");
     EXPECT_EQ(doom->launch().working_dir, "GOLD/DOOM");
     EXPECT_EQ(doom->screenshots().title, "title.png");
-    EXPECT_TRUE(doom->is_launchable());
+    EXPECT_TRUE(doom->isLaunchable());
 
     ASSERT_EQ(doom->sources().size(), 2u);
     EXPECT_EQ(doom->sources()[0].role, "primary");
@@ -123,7 +123,7 @@ TEST(GameDefinition, parses_the_real_doom_definition)
 TEST(GameDefinition, parses_a_minimal_definition)
 {
     std::string error;
-    const auto game = GameDefinition::fromTomlString(minimal_toml(), error);
+    const auto game = GameDefinition::fromTomlString(minimalToml(), error);
 
     ASSERT_TRUE(game.has_value()) << error;
     EXPECT_EQ(game->slug(), "doom");
@@ -133,7 +133,7 @@ TEST(GameDefinition, parses_a_minimal_definition)
 TEST(GameDefinition, accepts_a_definition_without_expected_files)
 {
     std::string error;
-    const auto game = GameDefinition::fromTomlString(minimal_toml(), error);
+    const auto game = GameDefinition::fromTomlString(minimalToml(), error);
 
     ASSERT_TRUE(game.has_value()) << error;
     EXPECT_TRUE(game->install().expected_files.empty());
@@ -148,7 +148,7 @@ TEST(GameDefinition, reads_expected_files_with_optional_fields)
 "GOLD/DOOM/DOOM.DOC"  = {}
 )";
     std::string error;
-    const auto game = GameDefinition::fromTomlString(minimal_toml(extra), error);
+    const auto game = GameDefinition::fromTomlString(minimalToml(extra), error);
 
     ASSERT_TRUE(game.has_value()) << error;
     ASSERT_EQ(game->install().expected_files.size(), 3u);
@@ -164,7 +164,7 @@ TEST(GameDefinition, reads_expected_files_with_optional_fields)
 
 TEST(GameDefinition, rejects_a_definition_with_no_sources)
 {
-    std::string toml = minimal_toml();
+    std::string toml = minimalToml();
     const auto start = toml.find("[sources.primary]");
     const auto end = toml.find("[dosbox]");
     ASSERT_NE(start, std::string::npos);
@@ -179,7 +179,7 @@ TEST(GameDefinition, rejects_an_unknown_license)
 {
     std::string error;
     const auto game = GameDefinition::fromTomlString(
-            with_replacement(R"(license = "shareware")", R"(license = "warez")"),
+            withReplacement(R"(license = "shareware")", R"(license = "warez")"),
             error);
 
     EXPECT_FALSE(game.has_value());
@@ -190,8 +190,8 @@ TEST(GameDefinition, rejects_an_unknown_install_type)
 {
     std::string error;
     const auto game = GameDefinition::fromTomlString(
-            with_replacement(R"(install_type = "floppyinstall")",
-                             R"(install_type = "telepathy")"),
+            withReplacement(R"(install_type = "floppyinstall")",
+                            R"(install_type = "telepathy")"),
             error);
 
     EXPECT_FALSE(game.has_value());
@@ -207,7 +207,7 @@ TEST_P(HostileSlug, is_rejected)
     const std::string slug = GetParam();
     std::string error;
     const auto game = GameDefinition::fromTomlString(
-            with_replacement(R"(slug = "doom")", "slug = \"" + toml_escaped(slug) + "\""),
+            withReplacement(R"(slug = "doom")", "slug = \"" + tomlEscaped(slug) + "\""),
             error);
 
     EXPECT_FALSE(game.has_value()) << "accepted hostile slug: " << slug;
@@ -228,8 +228,8 @@ TEST_P(HostileExecutable, is_rejected)
     const std::string exe = GetParam();
     std::string error;
     const auto game = GameDefinition::fromTomlString(
-            with_replacement(R"(executable = "DOOM.EXE")",
-                             "executable = \"" + toml_escaped(exe) + "\""),
+            withReplacement(R"(executable = "DOOM.EXE")",
+                            "executable = \"" + tomlEscaped(exe) + "\""),
             error);
 
     EXPECT_FALSE(game.has_value()) << "accepted hostile executable: " << exe;
@@ -245,11 +245,11 @@ TEST(GameDefinition, accepts_an_empty_executable_as_no_recipe_yet)
 {
     std::string error;
     const auto game = GameDefinition::fromTomlString(
-            with_replacement(R"(executable = "DOOM.EXE")", R"(executable = "")"),
+            withReplacement(R"(executable = "DOOM.EXE")", R"(executable = "")"),
             error);
 
     ASSERT_TRUE(game.has_value()) << error;
-    EXPECT_FALSE(game->is_launchable());
+    EXPECT_FALSE(game->isLaunchable());
 }
 
 class HostileWorkingDir : public testing::TestWithParam<const char*> {};
@@ -259,8 +259,8 @@ TEST_P(HostileWorkingDir, is_rejected)
     const std::string dir = GetParam();
     std::string error;
     const auto game = GameDefinition::fromTomlString(
-            with_replacement(R"(working_dir = "")",
-                             "working_dir = \"" + toml_escaped(dir) + "\""),
+            withReplacement(R"(working_dir = "")",
+                            "working_dir = \"" + tomlEscaped(dir) + "\""),
             error);
 
     EXPECT_FALSE(game.has_value()) << "accepted hostile working_dir: " << dir;
@@ -278,7 +278,7 @@ TEST(GameDefinition, rejects_an_expected_file_that_escapes_the_install_directory
 "../../../etc/passwd" = { size = 1 }
 )";
     std::string error;
-    const auto game = GameDefinition::fromTomlString(minimal_toml(extra), error);
+    const auto game = GameDefinition::fromTomlString(minimalToml(extra), error);
 
     EXPECT_FALSE(game.has_value());
     EXPECT_NE(error.find("expected file"), std::string::npos) << error;
@@ -286,7 +286,7 @@ TEST(GameDefinition, rejects_an_expected_file_that_escapes_the_install_directory
 
 TEST(GameDefinition, rejects_a_missing_required_section)
 {
-    std::string toml = minimal_toml();
+    std::string toml = minimalToml();
     const auto pos = toml.find("[launch]");
     ASSERT_NE(pos, std::string::npos);
     toml.erase(pos, toml.find("[screenshots]") - pos);
@@ -299,9 +299,9 @@ TEST(GameDefinition, rejects_a_missing_required_section)
 TEST(GameDefinition, rejects_a_wrong_type_for_a_field)
 {
     std::string error;
-    const auto game = GameDefinition::fromTomlString(
-            with_replacement("rank = 1", R"(rank = "first")"),
-            error);
+    const auto game = GameDefinition::fromTomlString(withReplacement("rank = 1",
+                                                                     R"(rank = "first")"),
+                                                     error);
 
     EXPECT_FALSE(game.has_value());
     EXPECT_NE(error.find("rank"), std::string::npos) << error;
@@ -310,9 +310,9 @@ TEST(GameDefinition, rejects_a_wrong_type_for_a_field)
 TEST(GameDefinition, rejects_a_negative_cycle_count)
 {
     std::string error;
-    const auto game = GameDefinition::fromTomlString(
-            with_replacement("cpu_cycles = 12000", "cpu_cycles = -1"),
-            error);
+    const auto game = GameDefinition::fromTomlString(withReplacement("cpu_cycles = 12000",
+                                                                     "cpu_cycles = -1"),
+                                                     error);
 
     EXPECT_FALSE(game.has_value());
     EXPECT_NE(error.find("cpu_cycles"), std::string::npos) << error;
@@ -352,31 +352,31 @@ TEST(GameDefinition, rejects_a_slug_that_disagrees_with_its_filename)
 
 TEST(SafePathComponent, accepts_plain_names_and_rejects_everything_else)
 {
-    EXPECT_TRUE(showroom::is_safe_path_component("DOOM.EXE"));
-    EXPECT_TRUE(showroom::is_safe_path_component("doom"));
-    EXPECT_TRUE(showroom::is_safe_path_component("keen4-ep"));
+    EXPECT_TRUE(showroom::isSafePathComponent("DOOM.EXE"));
+    EXPECT_TRUE(showroom::isSafePathComponent("doom"));
+    EXPECT_TRUE(showroom::isSafePathComponent("keen4-ep"));
 
-    EXPECT_FALSE(showroom::is_safe_path_component(""));
-    EXPECT_FALSE(showroom::is_safe_path_component("."));
-    EXPECT_FALSE(showroom::is_safe_path_component(".."));
-    EXPECT_FALSE(showroom::is_safe_path_component("a/b"));
-    EXPECT_FALSE(showroom::is_safe_path_component("a\\b"));
-    EXPECT_FALSE(showroom::is_safe_path_component(std::string_view("a\0b", 3)));
-    EXPECT_FALSE(showroom::is_safe_path_component("a b"));
-    EXPECT_FALSE(showroom::is_safe_path_component("a;b"));
+    EXPECT_FALSE(showroom::isSafePathComponent(""));
+    EXPECT_FALSE(showroom::isSafePathComponent("."));
+    EXPECT_FALSE(showroom::isSafePathComponent(".."));
+    EXPECT_FALSE(showroom::isSafePathComponent("a/b"));
+    EXPECT_FALSE(showroom::isSafePathComponent("a\\b"));
+    EXPECT_FALSE(showroom::isSafePathComponent(std::string_view("a\0b", 3)));
+    EXPECT_FALSE(showroom::isSafePathComponent("a b"));
+    EXPECT_FALSE(showroom::isSafePathComponent("a;b"));
 }
 
 TEST(SafeRelativePath, allows_empty_and_multiple_segments)
 {
-    EXPECT_TRUE(showroom::is_safe_relative_path(""));
-    EXPECT_TRUE(showroom::is_safe_relative_path("GOLD"));
-    EXPECT_TRUE(showroom::is_safe_relative_path("GOLD/DOOM"));
+    EXPECT_TRUE(showroom::isSafeRelativePath(""));
+    EXPECT_TRUE(showroom::isSafeRelativePath("GOLD"));
+    EXPECT_TRUE(showroom::isSafeRelativePath("GOLD/DOOM"));
 
-    EXPECT_FALSE(showroom::is_safe_relative_path("/GOLD"));
-    EXPECT_FALSE(showroom::is_safe_relative_path("GOLD/"));
-    EXPECT_FALSE(showroom::is_safe_relative_path("GOLD//DOOM"));
-    EXPECT_FALSE(showroom::is_safe_relative_path("GOLD/../DOOM"));
-    EXPECT_FALSE(showroom::is_safe_relative_path("GOLD\\DOOM"));
+    EXPECT_FALSE(showroom::isSafeRelativePath("/GOLD"));
+    EXPECT_FALSE(showroom::isSafeRelativePath("GOLD/"));
+    EXPECT_FALSE(showroom::isSafeRelativePath("GOLD//DOOM"));
+    EXPECT_FALSE(showroom::isSafeRelativePath("GOLD/../DOOM"));
+    EXPECT_FALSE(showroom::isSafeRelativePath("GOLD\\DOOM"));
 }
 
 } // namespace
