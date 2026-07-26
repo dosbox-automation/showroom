@@ -20,10 +20,9 @@ int main(int argc, char* argv[])
     const std::filesystem::path assets = showroom::Paths::assetsDir();
     showroom::log_info("showroom", "assets: %s", assets.string().c_str());
 
-    // The showroom wears the engine's icon: it is the same product as
-    // far as anyone looking at a task bar is concerned (Stefan,
-    // 2026-07-26). The desktop entry that makes this stick outside the
-    // window itself belongs to packaging, in phase 8.
+    // The showroom wears the engine's icon: same product as far as a task
+    // bar is concerned (Stefan, 2026-07-26). The desktop entry that makes
+    // it stick belongs to packaging.
     const QIcon icon(QString::fromStdString(
             (assets / "logos" / "dosbox-automation.svg").string()));
     if (icon.isNull()) {
@@ -36,9 +35,8 @@ int main(int argc, char* argv[])
     const showroom::GameCatalog catalog = showroom::GameCatalog::loadFromDirectory(
             showroom::Paths::gamesDir());
 
-    // A definition that failed to parse is left out of the grid rather
-    // than blanking it, and every one of them is named here: a game that
-    // silently went missing is the one bug nobody would report.
+    // Named here because a game that silently went missing is the one bug
+    // nobody would report.
     for (const showroom::CatalogLoadError& error : catalog.errors()) {
         showroom::log_error("showroom",
                             "%s: %s",

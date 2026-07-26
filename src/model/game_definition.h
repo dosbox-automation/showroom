@@ -67,16 +67,11 @@ struct InstallSettings {
     std::vector<ExpectedFile> expected_files;
 };
 
-// One bundled game definition, parsed from its TOML file.
-//
-// Everything here ends up in a filesystem path, a mount, or an autoexec
-// line, so the parse validates rather than trusting the file: the slug
-// names a directory, and the launch paths are appended to the install
-// root. A definition that fails validation is never half-constructed -
-// parsing returns nothing and says why.
+// Everything here ends up in a path, a mount or an autoexec line, so the
+// parse validates rather than trusting the file. A definition that fails
+// validation is never half-constructed.
 class GameDefinition {
 public:
-    // Both parsers return an empty optional on failure and fill error.
     static std::optional<GameDefinition> fromToml(const std::filesystem::path& path,
                                                   std::string& error);
     static std::optional<GameDefinition> fromTomlString(std::string_view toml,
@@ -114,19 +109,17 @@ private:
     InstallSettings install_;
 };
 
-// A slug names a directory in the cache and must match what
-// tools/csv_to_games.py enforces on the way out: lowercase alphanumeric
-// plus - and _, starting with a letter or digit. Stricter than a path
-// component on purpose - the two rules are not interchangeable.
+// Matches what tools/csv_to_games.py enforces on the way out, and is
+// deliberately stricter than a path component: the two are not
+// interchangeable.
 bool isSafeSlug(std::string_view value);
 
-// Exposed for the catalogue and for tests: a name that is safe to append
-// to a path. Rejects empty, absolute, traversal, separators and anything
-// outside a conservative character set.
+// Safe to append to a path: rejects empty, absolute, traversal,
+// separators and anything outside a conservative character set.
 bool isSafePathComponent(std::string_view value);
 
-// Same, for a relative multi-segment path such as "GOLD/DOOM". An empty
-// value is allowed: it means the install root itself.
+// Same for a multi-segment path such as "GOLD/DOOM"; empty means the
+// install root itself.
 bool isSafeRelativePath(std::string_view value);
 
 std::optional<License> licenseFromString(std::string_view value);

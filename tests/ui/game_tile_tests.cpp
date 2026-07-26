@@ -21,9 +21,8 @@
 namespace showroom {
 namespace {
 
-// The bundled assets, the same ones the application reads. Rendering a
-// tile against real screenshots is the point: a fixture image would not
-// catch a capture that is the wrong shape.
+// Real screenshots, not fixtures: a fixture would not catch a capture
+// that is the wrong shape.
 std::filesystem::path gamesDir()
 {
     return std::filesystem::path(SHOWROOM_SOURCE_ASSETS_DIR) / "games";
@@ -100,10 +99,9 @@ TEST(GameTilePainting, a_disabled_state_desaturates_the_screenshot)
     tile->setState(TileState::NotDownloaded);
     const QImage colour = renderTile(*tile);
 
-    // How far apart the channels are, not HSV saturation: saturation is
-    // a ratio, so on the near-black pixels a scrimmed tile is mostly
-    // made of, three units of difference reads as a third of full
-    // colour. The spread stays honest wherever it is measured.
+    // Channel spread, not HSV saturation: saturation is a ratio, so on
+    // near-black pixels three units of difference reads as a third of
+    // full colour.
     const auto widest_channel_spread = [](const QImage& image) {
         int widest = 0;
         for (int y = 4; y < image.height() - theme::kLegendHeightPx; y += 3) {

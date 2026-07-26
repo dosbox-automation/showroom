@@ -16,7 +16,6 @@ using showroom::InstallType;
 using showroom::License;
 using showroom::RecipeStatus;
 
-// The real doom.toml, relative to the working directory ctest runs in.
 const std::filesystem::path kDoomToml = "assets/games/doom/doom.toml";
 
 // A minimal valid definition. Tests override one thing at a time by
@@ -60,10 +59,8 @@ max_runtime_seconds = 120
 )" + extra;
 }
 
-// A backslash is a TOML escape introducer: embedded raw, a value like
-// "sub\DOOM.EXE" dies in the parser as an unknown escape and never
-// reaches the validator under test. Escape it so the validator sees a
-// genuine backslash.
+// A raw backslash is a TOML escape introducer, so "sub\DOOM.EXE" dies in
+// the parser and never reaches the validator under test.
 std::string tomlEscaped(const std::string& value)
 {
     std::string out;

@@ -203,8 +203,6 @@ void GameTile::paintEvent(QPaintEvent* /*event*/)
     painter.fillRect(rect(), theme::kSidebarBackground);
 
     if (!scaled_.isNull()) {
-        // Centred, so a capture that is not 4:3 sits between two bars
-        // rather than off to one side.
         const QPoint at((width() - scaled_.width()) / 2,
                         (height() - scaled_.height()) / 2);
         painter.drawPixmap(at, scaled_);

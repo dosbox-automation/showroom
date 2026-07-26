@@ -7,18 +7,11 @@
 
 namespace showroom {
 
-// The showroom's own version, from the CMake project version. It tracks
-// the application, not the engine it demonstrates.
+// Tracks the application, not the engine it demonstrates.
 inline constexpr const char* kShowroomVersion = SHOWROOM_VERSION;
 
-// The version of the bundled dosbox-automation, which is the badge in
-// the sidebar: the showroom exists to show that engine off, so its
-// version is the headline.
-//
-// Set at configure time until phase 4, where a real engine process gets
-// started and can be asked what it is. A build-time constant is honest
-// about being a build-time constant; a hardcoded literal in a widget
-// would quietly go stale.
+// The badge in the sidebar, set at configure time until a running engine
+// can be asked what it is.
 inline constexpr const char* kBundledEngineVersion = SHOWROOM_ENGINE_VERSION;
 
 } // namespace showroom

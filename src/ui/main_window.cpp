@@ -34,7 +34,6 @@ StepSizer MainWindow::sizerForPrimaryScreen()
         return StepSizer(GridChrome{}, 0, 0);
     }
 
-    // The usable area, which is what is left after panels and docks.
     const QSize usable = screen->availableGeometry().size();
     return StepSizer(GridChrome{}, usable.width(), usable.height());
 }

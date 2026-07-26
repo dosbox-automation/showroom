@@ -13,11 +13,8 @@
 
 namespace showroom {
 
-// What this is, who made the pieces, and every game it carries.
-//
-// The game strip is a visual inventory rather than a second launcher:
-// the thumbnails do not respond to the pointer and clicking one does
-// nothing.
+// The game strip is an inventory rather than a second launcher: the
+// thumbnails ignore the pointer.
 class AboutDialog : public QDialog {
     Q_OBJECT
 

@@ -7,23 +7,20 @@ Reads the curated CSV (design doc, human-edited) and emits
 assets/games/<slug>/<slug>.toml plus the legacy <slug>.json, and
 assets/games/index.json with the display order.
 
-The TOML is the single source of truth the showroom app reads. The CSV
-can only supply the catalogue half of it (identity, sources, licensing);
-the [dosbox], [launch] and [install] sections are filled in by hand per
-game. So this is a bootstrap tool: it writes a game's files once and
-then refuses to touch them again without --force.
+The TOML is the source of truth the app reads, and the CSV can only
+supply its catalogue half: [dosbox], [launch] and [install] are filled in
+by hand. So this is a bootstrap tool - it writes a game's files once and
+refuses to touch them again without --force.
 
-Where each field comes from, because they do not all come from the CSV:
+The fields do not all come from the CSV:
 
-- identity, sources, license, rank: the CSV, which is the curated list.
-- screenshots: the assets directory itself. The CSV's flag columns went
-  stale during the July screenshot safari - every shot was captured but
-  only one flag was ever ticked - and a file being on disk is a fact
-  that cannot rot. A disagreement is logged so the CSV can be fixed.
-- notes: an existing per-game JSON wins over the CSV. Those notes were
-  corrected by hand with findings from the install work (bass, for one,
-  records that the primary ISO has mangled filenames) and the CSV never
-  received them.
+- identity, sources, license, rank: the CSV, the curated list.
+- screenshots: the assets directory, because a file on disk is a fact
+  that cannot rot. The CSV's flags went stale during the July safari.
+- notes: an existing per-game JSON, which carries hand corrections from
+  the install work that never went back to the CSV.
+
+Disagreements between the two are logged rather than silently resolved.
 """
 
 import argparse

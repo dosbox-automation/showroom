@@ -18,24 +18,18 @@ namespace showroom {
 class Sidebar;
 class TileGrid;
 
-// The whole application window: sidebar on the left, tile grid filling
-// the rest.
-//
-// The window has no free size. It steps between the tile widths the
-// current screen can hold, by keyboard or by dragging an edge, and
-// remembers which step it was left at.
+// The window has no free size: it steps between the tile widths the
+// screen can hold and remembers which step it was left at.
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    // The sizer is passed in rather than built here, so which steps
-    // exist is a decision the caller makes and a test can state. Reading
-    // it off the primary screen inside the constructor would make every
-    // window test depend on the platform plugin's idea of a display.
+    // The sizer is passed in so a test can state a screen; measuring the
+    // primary screen here would make every window test depend on the
+    // platform plugin's idea of a display.
     MainWindow(const GameCatalog& catalog, const std::filesystem::path& assets_dir,
                Settings settings, StepSizer sizer, QWidget* parent = nullptr);
 
-    // The steps the screen this process opened on can hold.
     static StepSizer sizerForPrimaryScreen();
 
     int tileWidth() const { return tile_width_px_; }
@@ -52,9 +46,8 @@ private:
     void applyTileWidth(int width_px);
     void showAbout();
 
-    // Fixed for the life of the window. A window dragged to a smaller
-    // monitor keeps its step; nothing here re-measures behind the
-    // user's back.
+    // Fixed for the life of the window: dragged to a smaller monitor it
+    // keeps its step rather than re-measuring behind the user's back.
     StepSizer sizer_;
     Settings settings_;
     GameCatalog catalog_;
@@ -64,8 +57,8 @@ private:
     TileGrid* grid_ = nullptr;
     int tile_width_px_ = 0;
 
-    // resizeEvent applies a step, which resizes the window, which
-    // arrives back here. One flag is cheaper than an event filter.
+    // resizeEvent applies a step, which resizes the window, which arrives
+    // back here.
     bool applying_step_ = false;
 };
 

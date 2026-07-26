@@ -13,12 +13,8 @@
 
 namespace showroom {
 
-// The strip along the bottom of a tile: status dot, license label, and
-// the one button the current state offers.
-//
-// It sits over the lower edge of the screenshot rather than below it and
-// fades upward into the image, which is why it paints a gradient instead
-// of filling a background.
+// Sits over the lower edge of the screenshot rather than below it, which
+// is why it paints a gradient instead of filling a background.
 class LegendBar : public QWidget {
     Q_OBJECT
 
@@ -28,8 +24,7 @@ public:
     void setLicenseLabel(const QString& label);
     void setState(TileState state);
 
-    // 0 to 100. Only shown while the state is a working one; values
-    // outside the range are clamped rather than trusted.
+    // Clamped to 0..100 rather than trusted.
     void setProgress(int percent);
 
     TileState state() const { return state_; }
@@ -37,8 +32,7 @@ public:
     QSize sizeHint() const override;
 
 signals:
-    // The action button was clicked. Which action that is follows from
-    // the state; the tile decides what to do about it.
+    // Which action it was follows from the state; the tile decides.
     void actionTriggered();
 
 protected:
@@ -48,8 +42,8 @@ protected:
     void leaveEvent(QEvent* event) override;
 
 private:
-    // Empty when the state offers no action, which is also what stops
-    // the hand cursor appearing over a tile that cannot be clicked.
+    // Empty when the state offers no action, which also keeps the hand
+    // cursor off a tile that cannot be clicked.
     QRect actionRect() const;
     QString statusText() const;
 

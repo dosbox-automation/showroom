@@ -17,7 +17,6 @@ namespace {
 
 using showroom::GameCatalog;
 
-// The bundled assets, relative to the working directory ctest runs in.
 const std::filesystem::path kAssetGames = "assets/games";
 
 constexpr std::size_t kBundledGameCount = 16;
@@ -63,7 +62,6 @@ void writeRaw(const std::filesystem::path& games_dir, const std::string& slug,
     out << contents;
 }
 
-// A fresh directory per test, never the source tree.
 class CatalogDir : public testing::Test {
 protected:
     void SetUp() override

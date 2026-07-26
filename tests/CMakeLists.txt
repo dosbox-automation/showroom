@@ -24,13 +24,13 @@ gtest_discover_tests(showroom_tests
   WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
 
-# Widgets get their own binary. Keeping them out of showroom_tests is
-# what stops the pure-logic tier from quietly growing a Qt dependency:
-# that suite still links showroom_model and gtest and nothing else.
+# Widgets get their own binary, which is what stops the pure-logic tier
+# from quietly growing a Qt dependency.
 find_package(Qt6 6.4 REQUIRED COMPONENTS Test)
 
 qt_add_executable(showroom_ui_tests
   ui/ui_test_main.cpp
+  app/paths_tests.cpp
   ui/legend_bar_tests.cpp
   ui/game_tile_tests.cpp
   ui/main_window_tests.cpp

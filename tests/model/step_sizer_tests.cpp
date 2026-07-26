@@ -12,10 +12,8 @@
 namespace showroom {
 namespace {
 
-// The chrome from the mockup's own CSS (DOS Launcher.dc.html): a 78px
-// sidebar, 22px of padding round the grid and 16px between tiles, in a
-// 1200px-wide card. showroom-mockup-2026-07-18.png renders that at 0.93
-// scale, so its measured pixels are all a shade smaller.
+// From the mockup's CSS (DOS Launcher.dc.html), not from its PNG: that
+// render is 0.93 scale and every measured pixel in it is short.
 GridChrome defaultChrome()
 {
     return GridChrome{};
@@ -64,10 +62,8 @@ TEST(StepSizerSteps, a_1366x768_laptop_gets_the_minimum_and_nothing_that_overflo
     ASSERT_FALSE(widths.empty());
     EXPECT_EQ(widths.front(), kMinTileWidthPx);
 
-    // Four rows of 4:3 tiles make height the binding constraint on this
-    // screen long before width is: 200px tiles need 682px of window
-    // height, 240px tiles need 802px, and only 720px are available once
-    // the title bar is paid for.
+    // Height binds, not width: 200px tiles need 682px of window height,
+    // 240px need 802px, and 720px are available.
     EXPECT_EQ(widths.back(), 200);
 }
 

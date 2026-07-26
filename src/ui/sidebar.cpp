@@ -31,10 +31,8 @@ public:
     explicit BrandText(QWidget* parent = nullptr) : QWidget(parent)
     {
         setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-        // A Fixed policy takes its width from the size hint, and the
-        // default hint for a plain QWidget is nothing at all: without
-        // this the widget is zero pixels wide and paints into empty
-        // space, which is exactly as visible as not being there.
+        // A Fixed policy takes its width from the size hint, and a plain
+        // QWidget hints nothing, so without this it is zero wide.
         setFixedWidth(kBrandTextWidthPx);
     }
 

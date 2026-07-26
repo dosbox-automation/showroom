@@ -11,13 +11,9 @@
 
 namespace showroom {
 
-// The little the showroom remembers between runs.
-//
-// Deliberately tiny and deliberately in the cache: everything here can
-// be thrown away without losing anything the user would miss, and a
-// file the showroom trusts for behaviour has no business being
-// writable. The stored tile width is validated against what the current
-// screen can actually hold before it is used.
+// In the cache because everything here is disposable, and nothing the
+// showroom trusts for behaviour belongs in a writable file. The stored
+// width is validated against the current screen before use.
 class Settings {
 public:
     explicit Settings(std::filesystem::path file);

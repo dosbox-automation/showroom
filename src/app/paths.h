@@ -6,36 +6,41 @@
 #define SHOWROOM_APP_PATHS_H
 
 #include <filesystem>
+#include <optional>
+#include <string_view>
 
 namespace showroom {
 
-// Where the bundled assets and the writable cache live.
-//
-// These are two different kinds of place and the difference is a
-// security boundary, not a convenience: the assets are read-only and
-// trusted because they ship with the binary, and the cache is writable
-// and trusted for nothing. Game definitions are only ever read from the
-// first.
+// Lexical only; backs up the slug validators rather than replacing them.
+bool isWithin(const std::filesystem::path& base, const std::filesystem::path& candidate);
+
+// Assets are read-only and ship with the binary; the cache is writable
+// and trusted for nothing.
 class Paths {
 public:
-    // Resolution order for the assets, first hit wins:
-    //   1. SHOWROOM_ASSETS_DIR, for tests and for a packaged tree that
-    //      puts them somewhere else. It changes only what this process
-    //      reads for its own user, which is no more than replacing the
-    //      binary already allows.
-    //   2. <directory of the executable>/assets, which is the AppImage
-    //      and the Windows zip.
-    //   3. The source tree it was built from, so a developer build runs
-    //      without installing anything.
+    // SHOWROOM_ASSETS_DIR, then beside the executable, then the source
+    // tree. The override grants no more than replacing the binary does.
     static std::filesystem::path assetsDir();
 
     static std::filesystem::path gamesDir() { return assetsDir() / "games"; }
     static std::filesystem::path logosDir() { return assetsDir() / "logos"; }
 
-    // Downloads, installs and the generated run conf. Created on first
-    // use. On Windows this sits next to the executable so the whole
-    // thing stays portable; elsewhere it is the XDG cache directory.
+    // Created private to the user, beside the executable on Windows to
+    // stay portable. A broken SHOWROOM_CACHE_DIR is reported, never
+    // replaced by the real cache.
     static std::filesystem::path cacheDir();
+
+    static std::filesystem::path downloadsDir();
+    static std::filesystem::path installsDir();
+
+    // Empty for an unsafe slug, rather than a path that looks usable.
+    static std::optional<std::filesystem::path> downloadDirFor(std::string_view slug);
+    static std::optional<std::filesystem::path> installDirFor(std::string_view slug);
+
+    // The engine treats the last -conf file's directory as an allowed
+    // mount root, so moving this out of the cache stops installs being
+    // mountable.
+    static std::filesystem::path runConfFile() { return cacheDir() / "run.conf"; }
 
     static std::filesystem::path settingsFile() { return cacheDir() / "showroom.ini"; }
 };

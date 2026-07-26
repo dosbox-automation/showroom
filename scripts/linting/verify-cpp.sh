@@ -19,12 +19,8 @@ die() {
     exit 1
 }
 
-# See format-cpp.sh: --others is what stops new, uncommitted code from
-# being skipped while the run still reports success.
-# Files copied verbatim from sibling house projects live under imported/.
-# They keep their origin's naming and formatting on purpose, so a fix
-# crosses between trees as a plain diff. Checking them would only report
-# that they are not ours.
+# See format-cpp.sh: --others stops new code being skipped, and imported/
+# keeps its origin's naming on purpose.
 list_cpp_files() {
     git ls-files -z --cached --others --exclude-standard \
         -- 'src/*.cpp' 'tests/*.cpp' \
@@ -56,21 +52,14 @@ main() {
     done < <(list_cpp_files)
     (( ${#files[@]} > 0 )) || die "no C++ files found - wrong directory?"
 
-    # Our own headers are checked through the files that include them;
-    # everything else (Qt, toml++, gtest) is somebody else's naming.
+    # imported/ must be excluded here as well as from the file list: a
+    # header left out of the list is still reported against whoever
+    # includes it.
     #
-    # imported/ has to be excluded here as well as from the file list.
-    # Leaving it out of the list only stops it being a subject; the
-    # moment one of our own files includes the header, its naming is
-    # reported against whichever file pulled it in. The exemption has to
-    # cover both or it only holds until someone uses the code.
-    #
-    # --exclude-header-filter, not a negative lookahead in the include
-    # pattern: clang-tidy compiles these with LLVM's regex engine, which
-    # has no lookahead. An unsupported pattern does not fail loudly, it
-    # matches nothing, and the run then reports every file clean while
-    # inspecting no header at all. Verified by putting a deliberately
-    # wrong name in a header and watching it get caught.
+    # --exclude-header-filter rather than a negative lookahead: LLVM's
+    # regex engine has none, and an unsupported pattern matches nothing
+    # instead of failing, so every header goes uninspected while the run
+    # reports clean.
     clang-tidy -p "$build_dir" --warnings-as-errors='*' \
         --header-filter='(src|tests)/.*' \
         --exclude-header-filter='.*/imported/.*' "${files[@]}"

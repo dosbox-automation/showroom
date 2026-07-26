@@ -18,20 +18,15 @@ namespace showroom {
 
 class LegendBar;
 
-// One game in the grid: a 4:3 screenshot with the legend bar over its
-// lower edge.
-//
-// The tile owns no logic beyond what it draws. It is told which state to
-// show and reports that its action was triggered; deciding whether that
-// means download, install or launch belongs above it.
+// One game in the grid, 4:3. The tile owns no logic beyond what it draws:
+// whether its action means download, install or launch is decided above it.
 class GameTile : public QWidget {
     Q_OBJECT
 
 public:
-    // assets_dir is the game's own directory, the one holding its TOML
-    // and its two screenshots. A missing or unreadable screenshot leaves
-    // the image area empty rather than failing the tile: sixteen tiles
-    // must not depend on thirty-two files all being present.
+    // The game's own directory, holding its TOML and screenshots. A
+    // missing screenshot leaves the image empty rather than failing the
+    // tile - sixteen tiles must not depend on thirty-two files.
     GameTile(const GameDefinition& definition, const std::filesystem::path& assets_dir,
              QWidget* parent = nullptr);
 
@@ -41,7 +36,6 @@ public:
     TileState state() const { return state_; }
     const QString& slug() const { return slug_; }
 
-    // 4:3, image and legend together.
     void setTileWidth(int width_px);
 
 signals:
@@ -63,13 +57,9 @@ private:
     QPixmap title_shot_;
     QPixmap gameplay_shot_;
 
-    // Scaled to the current tile size, and desaturated when the state
-    // calls for it. Rebuilt on resize and on any change that alters
-    // which of the two shots is shown.
     QPixmap scaled_;
-    // The tile size the cached pixmap was built for, not the pixmap's
-    // own size: a letterboxed capture is smaller than the tile in one
-    // direction, so its own size never matches and would rescale on
+    // The tile size it was built for, not the pixmap's own size: a
+    // letterboxed capture never matches the tile and would rescale on
     // every repaint.
     QSize scaled_for_size_;
     bool scaled_is_grayscale_ = false;

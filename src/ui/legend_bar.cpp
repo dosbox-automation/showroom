@@ -135,13 +135,9 @@ void LegendBar::paintEvent(QPaintEvent* /*event*/)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Three stops rather than the mockup's two. Its tiles are flat
-    // colour placeholders, so a gradient that is half transparent where
-    // the icons sit reads perfectly well on them; over a real
-    // screenshot the same band can land on something bright - DOOM's id
-    // logo sits exactly there - and swallow the button whole. The extra
-    // stop keeps the band dark until past the text baseline and only
-    // then fades.
+    // Three stops rather than the mockup's two: over flat placeholder
+    // tiles a half-transparent band reads fine, over DOOM's id logo it
+    // swallowed the button whole.
     QLinearGradient gradient(0, height(), 0, 0);
     gradient.setColorAt(0.0, theme::kLegendGradientBottom);
     gradient.setColorAt(0.6, theme::kLegendGradientMiddle);

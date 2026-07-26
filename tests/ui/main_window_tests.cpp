@@ -160,10 +160,9 @@ TEST_F(WindowFixture, every_tile_follows_the_step)
 
 TEST_F(WindowFixture, the_window_accepts_a_close_request)
 {
-    // The application side of what the window manager asks for when the
-    // title bar X is clicked. Worth its own test because the desktop
-    // half of that path depends on a shortcut binding that can simply be
-    // missing, and then a manual check proves nothing either way.
+    // The application side of the title bar X. Worth a test because the
+    // desktop half depends on a keybinding that can be missing, and then
+    // a manual check proves nothing either way.
     MainWindow window(catalog(), assetsDir(), settings(), sizer());
     window.show();
 

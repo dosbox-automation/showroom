@@ -30,9 +30,6 @@ QImage renderBar(LegendBar& bar)
     return canvas.toImage();
 }
 
-// The right-hand end of the bar, where the action button lives. A state
-// that offers an action must put something there; a state that does not
-// must leave it as it found it.
 bool hasInkInActionArea(const QImage& image)
 {
     const int left = image.width() - theme::kLegendPaddingXPx - theme::kActionIconPx - 2;
@@ -88,7 +85,6 @@ TEST(LegendBarPainting, the_label_gives_way_to_the_phase_while_work_is_running)
     bar.setState(TileState::Ready);
     const QImage idle = renderBar(bar);
 
-    // Different text in the same place: the images must differ.
     EXPECT_NE(working, idle);
 }
 

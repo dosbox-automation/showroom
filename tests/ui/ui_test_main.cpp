@@ -2,13 +2,10 @@
 // License: GPL-3.0-or-later. Contact: dosbox-automation-showroom-project@trinity2k.net
 //
 
-// The widget tests need a QApplication, which has to exist before any
-// widget is constructed and outlive all of them. gtest_main cannot
-// provide that, so this target brings its own entry point.
-//
-// The platform plugin is forced to offscreen here rather than left to
-// the environment: a test run that quietly needs a display is a test
-// run that passes on one machine and hangs on the build VM.
+// A QApplication must exist before any widget and outlive all of them,
+// which gtest_main cannot arrange. Offscreen is forced here rather than
+// left to the environment: a run that quietly needs a display passes
+// here and hangs on the build VM.
 
 #include <QApplication>
 

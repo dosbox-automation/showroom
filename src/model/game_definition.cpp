@@ -58,8 +58,6 @@ struct Parser {
         return false;
     }
 
-    // Every lookup names its field in the error, so a bad definition says
-    // which line to go and look at.
     bool requireString(const toml::table& table, std::string_view key, std::string& out,
                        std::string_view context)
     {

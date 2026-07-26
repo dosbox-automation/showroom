@@ -12,16 +12,11 @@
 
 namespace showroom {
 
-// The narrow strip down the left: which engine version this showroom
-// carries, the two project logos, and the three things the application
-// itself can do.
 class Sidebar : public QWidget {
     Q_OBJECT
 
 public:
-    // engine_version is the dosbox-automation version string, which is
-    // the headline: the showroom exists to demonstrate that engine, so
-    // its version is the one on display.
+    // The engine version, not the showroom's: that is the one on display.
     Sidebar(const QString& engine_version, const std::filesystem::path& logos_dir,
             QWidget* parent = nullptr);
 

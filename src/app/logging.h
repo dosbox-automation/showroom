@@ -5,19 +5,9 @@
 #ifndef SHOWROOM_APP_LOGGING_H
 #define SHOWROOM_APP_LOGGING_H
 
-// The logger, safe to include next to Qt.
-//
-// Qt defines `emit` as an empty macro and LogHandler has a virtual
-// member function called emit(), so including <QWidget> before
-// imported/log.h turns that declaration into a syntax error. The
-// imported file keeps augra-engine's exact text - that is the whole
-// reason it was copied rather than shared - so the collision is
-// resolved here instead of in her code.
-//
-// Every file in the Qt-linked layer includes this header rather than
-// imported/log.h. Including the logger directly happens to work when
-// the include order puts it first, and that is not a property worth
-// depending on.
+// Qt's empty `emit` macro collides with LogHandler::emit(), and the
+// imported logger keeps augra-engine's exact text, so the collision is
+// resolved here. Include this, never imported/log.h directly.
 
 #ifdef emit
 #define SHOWROOM_QT_EMIT_WAS_DEFINED

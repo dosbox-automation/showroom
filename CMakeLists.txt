@@ -59,15 +59,13 @@ target_link_libraries(showroom_model PUBLIC
   tomlplusplus::tomlplusplus
 )
 
-# The version of the engine this build bundles. It is the badge in the
-# sidebar, so the release train sets it in one place rather than leaving
-# a literal to go stale in a widget.
+# The sidebar badge, set here so the release train has one place to
+# change rather than a literal going stale in a widget.
 set(SHOWROOM_ENGINE_VERSION "0.84-da3" CACHE STRING
     "Version string of the bundled dosbox-automation")
 
-# Widgets and everything that needs Qt. Kept a library rather than
-# folded into the executable so the UI tests can link it without
-# rebuilding it, and so showroom_model stays provably Qt-free.
+# A library rather than part of the executable, so the UI tests can link
+# it and showroom_model stays provably Qt-free.
 qt_add_library(showroom_ui STATIC
   src/app/paths.cpp
   src/app/settings.cpp

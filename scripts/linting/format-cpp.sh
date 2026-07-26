@@ -49,14 +49,9 @@ assert_version() {
     printf 'Using %s\n' "$version"
 }
 
-# Tracked files plus new ones git does not ignore. --others matters: a
-# file written this session is untracked, and checking only what is
-# tracked means brand new code is silently skipped and the run still
-# reports clean. --exclude-standard keeps .workspace/ and build/ out.
-# Files copied verbatim from sibling house projects live under imported/.
-# They keep their origin's naming and formatting on purpose, so a fix
-# crosses between trees as a plain diff. Checking them would only report
-# that they are not ours.
+# --others matters: files written this session are untracked, and a check
+# that skips them still reports clean. imported/ keeps its origin's
+# formatting so fixes cross between trees as a plain diff.
 list_cpp_files() {
     git ls-files -z --cached --others --exclude-standard \
         -- 'src/*.cpp' 'src/*.h' 'tests/*.cpp' 'tests/*.h' \
