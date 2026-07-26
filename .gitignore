@@ -12,3 +12,10 @@ build/
 # Python tooling caches
 .pytest_cache/
 .ruff_cache/
+
+# Session transcripts and scratch space. The global ignore already covers
+# these, but it does not travel with a clone, and .sessions/ holds hundreds
+# of megabytes that must never reach a public repository.
+.sessions/
+.workspace/
+compile_commands.json

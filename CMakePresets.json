@@ -1,0 +1,51 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "debug-linux",
+      "displayName": "Debug (Linux), using system libs",
+      "description": "Configure for Debug build against the distribution's Qt 6",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/debug-linux",
+      "cacheVariables": {
+        "IS_PRESET_USED": "TRUE",
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release-linux",
+      "displayName": "Release (Linux), using system libs",
+      "description": "Configure for Release build against the distribution's Qt 6",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/release-linux",
+      "cacheVariables": {
+        "IS_PRESET_USED": "TRUE",
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "debug-linux-vcpkg",
+      "displayName": "Debug (Linux), using vcpkg",
+      "description": "Configure for Debug build against a vcpkg-built static Qt 6",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/debug-linux-vcpkg",
+      "cacheVariables": {
+        "IS_PRESET_USED": "TRUE",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release-linux-vcpkg",
+      "displayName": "Release (Linux), using vcpkg",
+      "description": "Configure for Release build against a vcpkg-built static Qt 6",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/release-linux-vcpkg",
+      "cacheVariables": {
+        "IS_PRESET_USED": "TRUE",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ]
+}
