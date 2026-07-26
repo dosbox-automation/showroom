@@ -33,6 +33,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # 6.4 is the baseline the code may rely on. Raising it cuts off older
 # distribution Qt builds, so check the build VMs before bumping.
 find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets Network)
+find_package(tomlplusplus CONFIG REQUIRED)
 
 qt_standard_project_setup()
 
@@ -42,11 +43,25 @@ else()
   add_compile_options(-Wall -Wextra -Wpedantic -Werror=return-type)
 endif()
 
+# Pure logic, no Qt: the model carries the test weight and both the
+# application and the test binary link it.
+add_library(showroom_model STATIC
+  src/model/game_definition.cpp
+  src/model/game_catalog.cpp
+)
+
+target_include_directories(showroom_model PUBLIC src)
+
+target_link_libraries(showroom_model PUBLIC
+  tomlplusplus::tomlplusplus
+)
+
 qt_add_executable(showroom
   src/main.cpp
 )
 
 target_link_libraries(showroom PRIVATE
+  showroom_model
   Qt6::Widgets
   Qt6::Network
 )
