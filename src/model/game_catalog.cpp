@@ -27,7 +27,7 @@ int compare_ignoring_case(std::string_view a, std::string_view b)
     return a.size() < b.size() ? -1 : 1;
 }
 
-}  // namespace
+} // namespace
 
 bool title_precedes(const GameDefinition& a, const GameDefinition& b)
 {
@@ -89,11 +89,12 @@ GameCatalog GameCatalog::loadFromDirectory(const std::filesystem::path& games_di
 
 const GameDefinition* GameCatalog::find(std::string_view slug) const
 {
-    const auto it = std::find_if(games_.begin(), games_.end(),
+    const auto it = std::find_if(games_.begin(),
+                                 games_.end(),
                                  [slug](const GameDefinition& game) {
                                      return game.slug() == slug;
                                  });
     return it == games_.end() ? nullptr : &*it;
 }
 
-}  // namespace showroom
+} // namespace showroom

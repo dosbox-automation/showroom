@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -23,20 +24,27 @@ constexpr std::size_t kBundledGameCount = 16;
 
 std::string definition_toml(const std::string& slug, const std::string& title)
 {
-    return "slug = \"" + slug + "\"\n"
-           "title = \"" + title + "\"\n"
-           "rank = 1\n"
-           "license = \"freeware\"\n"
-           "\n[sources.primary]\n"
-           "url = \"https://example.org/game.zip\"\n"
-           "\n[dosbox]\n"
-           "machine = \"svga_s3\"\n"
-           "cpu_cycles = 12000\n"
-           "cpu_cycles_protected = 12000\n"
-           "\n[launch]\n"
-           "executable = \"GAME.EXE\"\n"
-           "\n[install]\n"
-           "max_runtime_seconds = 60\n";
+    return std::format(R"(slug = "{}"
+title = "{}"
+rank = 1
+license = "freeware"
+
+[sources.primary]
+url = "https://example.org/game.zip"
+
+[dosbox]
+machine = "svga_s3"
+cpu_cycles = 12000
+cpu_cycles_protected = 12000
+
+[launch]
+executable = "GAME.EXE"
+
+[install]
+max_runtime_seconds = 60
+)",
+                       slug,
+                       title);
 }
 
 void write_game(const std::filesystem::path& games_dir, const std::string& slug,
@@ -61,9 +69,9 @@ protected:
     void SetUp() override
     {
         dir_ = std::filesystem::temp_directory_path()
-               / ("showroom-catalog-" + std::to_string(::testing::UnitTest::GetInstance()
-                                                           ->random_seed())
-                  + "-" + test_name());
+             / ("showroom-catalog-"
+                + std::to_string(::testing::UnitTest::GetInstance()->random_seed()) + "-"
+                + test_name());
         std::filesystem::remove_all(dir_);
         std::filesystem::create_directories(dir_);
     }
@@ -81,14 +89,14 @@ protected:
 TEST(GameCatalogAssets, loads_every_bundled_game)
 {
     ASSERT_TRUE(std::filesystem::is_directory(kAssetGames))
-        << "run ctest from the source directory; looked for "
-        << std::filesystem::absolute(kAssetGames);
+            << "run ctest from the source directory; looked for "
+            << std::filesystem::absolute(kAssetGames);
 
     const auto catalog = GameCatalog::loadFromDirectory(kAssetGames);
 
     for (const auto& error : catalog.errors()) {
-        ADD_FAILURE() << "bundled definition rejected: " << error.path << ": "
-                      << error.message;
+        ADD_FAILURE()
+                << "bundled definition rejected: " << error.path << ": " << error.message;
     }
     EXPECT_EQ(catalog.size(), kBundledGameCount);
     EXPECT_NE(catalog.find("doom"), nullptr);
@@ -124,9 +132,9 @@ TEST(GameCatalogAssets, every_bundled_game_has_its_screenshots_on_disk)
         const auto dir = kAssetGames / game.slug();
         EXPECT_FALSE(game.screenshots().title.empty()) << game.slug();
         EXPECT_TRUE(std::filesystem::exists(dir / game.screenshots().title))
-            << game.slug() << " claims a title screenshot that is not there";
+                << game.slug() << " claims a title screenshot that is not there";
         EXPECT_TRUE(std::filesystem::exists(dir / game.screenshots().gameplay))
-            << game.slug() << " claims a gameplay screenshot that is not there";
+                << game.slug() << " claims a gameplay screenshot that is not there";
     }
 }
 
@@ -160,7 +168,7 @@ TEST_F(CatalogDir, one_corrupt_definition_does_not_blank_the_rest)
     EXPECT_EQ(catalog.find("broken"), nullptr);
     ASSERT_EQ(catalog.errors().size(), 1u);
     EXPECT_NE(catalog.errors()[0].message.find("malformed"), std::string::npos)
-        << catalog.errors()[0].message;
+            << catalog.errors()[0].message;
 }
 
 TEST_F(CatalogDir, a_definition_whose_slug_fights_its_directory_is_rejected)
@@ -175,7 +183,7 @@ TEST_F(CatalogDir, a_definition_whose_slug_fights_its_directory_is_rejected)
     ASSERT_EQ(catalog.errors().size(), 1u);
     EXPECT_NE(catalog.errors()[0].message.find("does not match file name"),
               std::string::npos)
-        << catalog.errors()[0].message;
+            << catalog.errors()[0].message;
 }
 
 TEST_F(CatalogDir, sorts_titles_ignoring_case)
@@ -222,4 +230,4 @@ TEST_F(CatalogDir, at_rejects_an_out_of_range_index)
     EXPECT_THROW((void)catalog.at(1), std::out_of_range);
 }
 
-}  // namespace
+} // namespace

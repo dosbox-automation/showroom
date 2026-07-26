@@ -132,6 +132,6 @@ bool is_safe_relative_path(std::string_view value);
 std::optional<License> license_from_string(std::string_view value);
 std::optional<InstallType> install_type_from_string(std::string_view value);
 
-}  // namespace showroom
+} // namespace showroom
 
-#endif  // SHOWROOM_MODEL_GAME_DEFINITION_H
+#endif // SHOWROOM_MODEL_GAME_DEFINITION_H

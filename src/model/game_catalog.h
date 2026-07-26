@@ -57,6 +57,6 @@ private:
 // so the order never depends on how the filesystem enumerates.
 bool title_precedes(const GameDefinition& a, const GameDefinition& b);
 
-}  // namespace showroom
+} // namespace showroom
 
-#endif  // SHOWROOM_MODEL_GAME_CATALOG_H
+#endif // SHOWROOM_MODEL_GAME_CATALOG_H

@@ -116,7 +116,7 @@ struct Parser {
     }
 };
 
-}  // namespace
+} // namespace
 
 bool is_safe_slug(std::string_view value)
 {
@@ -144,13 +144,13 @@ bool is_safe_path_component(std::string_view value)
 bool is_safe_relative_path(std::string_view value)
 {
     if (value.empty()) {
-        return true;  // the install root itself
+        return true; // the install root itself
     }
     std::size_t start = 0;
     while (true) {
         const auto end = value.find('/', start);
-        const auto length =
-            end == std::string_view::npos ? value.size() - start : end - start;
+        const auto length = end == std::string_view::npos ? value.size() - start
+                                                          : end - start;
         if (!is_safe_path_component(value.substr(start, length))) {
             return false;
         }
@@ -178,11 +178,11 @@ std::optional<License> license_from_string(std::string_view value)
 std::optional<InstallType> install_type_from_string(std::string_view value)
 {
     static constexpr std::array<std::pair<std::string_view, InstallType>, 5> kTypes{{
-        {"unzip", InstallType::Unzip},
-        {"unzipinstall", InstallType::UnzipInstall},
-        {"exeinstall", InstallType::ExeInstall},
-        {"floppyinstall", InstallType::FloppyInstall},
-        {"isoinstall", InstallType::IsoInstall},
+            {"unzip", InstallType::Unzip},
+            {"unzipinstall", InstallType::UnzipInstall},
+            {"exeinstall", InstallType::ExeInstall},
+            {"floppyinstall", InstallType::FloppyInstall},
+            {"isoinstall", InstallType::IsoInstall},
     }};
     for (const auto& [name, type] : kTypes) {
         if (name == value) {
@@ -213,7 +213,8 @@ std::optional<GameDefinition> GameDefinition::fromToml(const std::filesystem::pa
     // would install into one directory and launch from another.
     const auto stem = path.stem().string();
     if (game->slug() != stem) {
-        error = path.string() + ": slug \"" + game->slug() + "\" does not match file name";
+        error = path.string() + ": slug \"" + game->slug()
+              + "\" does not match file name";
         return std::nullopt;
     }
     return game;
@@ -281,7 +282,8 @@ std::optional<GameDefinition> GameDefinition::fromTomlString(std::string_view te
         }
         const auto& entry = *node.as_table();
         GameSource source;
-        source.role = parser.optional_string(entry, "role").value_or(std::string(key.str()));
+        source.role =
+                parser.optional_string(entry, "role").value_or(std::string(key.str()));
         if (!parser.require_string(entry, "url", source.url, "source " + source.role)) {
             error = parser.error;
             return std::nullopt;
@@ -294,7 +296,7 @@ std::optional<GameDefinition> GameDefinition::fromTomlString(std::string_view te
             const auto type = install_type_from_string(*type_name);
             if (!type) {
                 error = "source " + source.role + ": unknown install type \"" + *type_name
-                        + "\"";
+                      + "\"";
                 return std::nullopt;
             }
             source.install_type = type;
@@ -307,7 +309,8 @@ std::optional<GameDefinition> GameDefinition::fromTomlString(std::string_view te
         error = "definition: at least one source is required";
         return std::nullopt;
     }
-    std::stable_sort(game.sources_.begin(), game.sources_.end(),
+    std::stable_sort(game.sources_.begin(),
+                     game.sources_.end(),
                      [](const GameSource& a, const GameSource& b) {
                          return role_order(a.role) < role_order(b.role);
                      });
@@ -318,10 +321,17 @@ std::optional<GameDefinition> GameDefinition::fromTomlString(std::string_view te
         return std::nullopt;
     }
     if (!parser.require_string(*dosbox, "machine", game.dosbox_.machine, "dosbox")
-        || !parser.require_int(*dosbox, "cpu_cycles", game.dosbox_.cpu_cycles, "dosbox", 1,
+        || !parser.require_int(*dosbox,
+                               "cpu_cycles",
+                               game.dosbox_.cpu_cycles,
+                               "dosbox",
+                               1,
                                kMaxCpuCycles)
-        || !parser.require_int(*dosbox, "cpu_cycles_protected",
-                               game.dosbox_.cpu_cycles_protected, "dosbox", 1,
+        || !parser.require_int(*dosbox,
+                               "cpu_cycles_protected",
+                               game.dosbox_.cpu_cycles_protected,
+                               "dosbox",
+                               1,
                                kMaxCpuCycles)) {
         error = parser.error;
         return std::nullopt;
@@ -329,10 +339,10 @@ std::optional<GameDefinition> GameDefinition::fromTomlString(std::string_view te
     if (const auto* sound = dosbox->get("sound"); sound != nullptr && sound->is_table()) {
         const auto& table = *sound->as_table();
         game.dosbox_.sound.sblaster_type =
-            parser.optional_string(table, "sblaster_type").value_or("");
+                parser.optional_string(table, "sblaster_type").value_or("");
         game.dosbox_.sound.mpu401 = parser.optional_string(table, "mpu401").value_or("");
         game.dosbox_.sound.midi_device =
-            parser.optional_string(table, "midi_device").value_or("");
+                parser.optional_string(table, "midi_device").value_or("");
     }
 
     const auto* launch = parser.require_table(root, "launch");
@@ -349,18 +359,18 @@ std::optional<GameDefinition> GameDefinition::fromTomlString(std::string_view te
     if (!game.launch_.executable.empty()
         && !is_safe_path_component(game.launch_.executable)) {
         error = "launch: executable \"" + game.launch_.executable
-                + "\" must be a plain file name";
+              + "\" must be a plain file name";
         return std::nullopt;
     }
     if (!game.launch_.setup_exe.empty()
         && !is_safe_path_component(game.launch_.setup_exe)) {
         error = "launch: setup_exe \"" + game.launch_.setup_exe
-                + "\" must be a plain file name";
+              + "\" must be a plain file name";
         return std::nullopt;
     }
     if (!is_safe_relative_path(game.launch_.working_dir)) {
         error = "launch: working_dir \"" + game.launch_.working_dir
-                + "\" must stay inside the install directory";
+              + "\" must stay inside the install directory";
         return std::nullopt;
     }
 
@@ -369,7 +379,7 @@ std::optional<GameDefinition> GameDefinition::fromTomlString(std::string_view te
         const auto& table = *shots->as_table();
         game.screenshots_.title = parser.optional_string(table, "title").value_or("");
         game.screenshots_.gameplay =
-            parser.optional_string(table, "gameplay").value_or("");
+                parser.optional_string(table, "gameplay").value_or("");
     }
     for (const auto* name : {&game.screenshots_.title, &game.screenshots_.gameplay}) {
         if (!name->empty() && !is_safe_path_component(*name)) {
@@ -383,8 +393,11 @@ std::optional<GameDefinition> GameDefinition::fromTomlString(std::string_view te
         error = parser.error;
         return std::nullopt;
     }
-    if (!parser.require_int(*install, "max_runtime_seconds",
-                            game.install_.max_runtime_seconds, "install", 1,
+    if (!parser.require_int(*install,
+                            "max_runtime_seconds",
+                            game.install_.max_runtime_seconds,
+                            "install",
+                            1,
                             kMaxInstallSeconds)) {
         error = parser.error;
         return std::nullopt;
@@ -401,7 +414,7 @@ std::optional<GameDefinition> GameDefinition::fromTomlString(std::string_view te
             file.path = std::string(key.str());
             if (file.path.empty() || !is_safe_relative_path(file.path)) {
                 error = "install: expected file \"" + file.path
-                        + "\" must stay inside the install directory";
+                      + "\" must stay inside the install directory";
                 return std::nullopt;
             }
             if (!node.is_table()) {
@@ -413,7 +426,7 @@ std::optional<GameDefinition> GameDefinition::fromTomlString(std::string_view te
                 const auto value = size->value<std::int64_t>();
                 if (!value || *value < 0) {
                     error = "install: expected file \"" + file.path
-                            + "\" has an invalid size";
+                          + "\" has an invalid size";
                     return std::nullopt;
                 }
                 file.size = static_cast<std::uint64_t>(*value);
@@ -423,7 +436,8 @@ std::optional<GameDefinition> GameDefinition::fromTomlString(std::string_view te
         }
         // toml++ keys its tables in an unspecified order; sorting keeps the
         // integrity check reproducible and its failures readable.
-        std::sort(game.install_.expected_files.begin(), game.install_.expected_files.end(),
+        std::sort(game.install_.expected_files.begin(),
+                  game.install_.expected_files.end(),
                   [](const ExpectedFile& a, const ExpectedFile& b) {
                       return a.path < b.path;
                   });
@@ -432,4 +446,4 @@ std::optional<GameDefinition> GameDefinition::fromTomlString(std::string_view te
     return game;
 }
 
-}  // namespace showroom
+} // namespace showroom
