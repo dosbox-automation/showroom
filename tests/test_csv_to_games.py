@@ -5,10 +5,10 @@ import json
 import os
 import stat
 import sys
-import tomllib
 from pathlib import Path
 
 import pytest
+import tomllib
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
 from csv_to_games import (
@@ -300,7 +300,7 @@ def test_written_files_are_world_readable(tmp_path):
     "tab \t inside",
     "control \x01 byte",
     "delete \x7f byte",
-    "unicode zero width ​ here",
+    "unicode zero width \u200b here",
     'toml injection" \nrank = 99 #',
 ])
 def test_hostile_strings_survive_the_round_trip(hostile):

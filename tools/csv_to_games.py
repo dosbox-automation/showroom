@@ -320,7 +320,10 @@ def write_text_atomic(path: Path, text: str) -> None:
     """
     if path.exists() and path.read_text(encoding="utf-8") == text:
         return
-    tmp = tempfile.NamedTemporaryFile(
+
+    # file has to be closed, chmod-ed and renamed while still on disk, and
+    # a context manager would delete or close it at the wrong moment.
+    tmp = tempfile.NamedTemporaryFile(  # noqa: SIM115
         "w", dir=path.parent, suffix=".tmp", delete=False, encoding="utf-8"
     )
     try:
