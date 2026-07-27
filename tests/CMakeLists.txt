@@ -39,6 +39,7 @@ qt_add_executable(showroom_engine_tests
   engine/engine_test_main.cpp
   engine/api_client_tests.cpp
   engine/engine_process_tests.cpp
+  engine/game_launcher_tests.cpp
 )
 
 target_link_libraries(showroom_engine_tests PRIVATE

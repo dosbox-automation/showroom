@@ -5,6 +5,7 @@
 #include "ui/main_window.h"
 
 #include "app/settings.h"
+#include "engine/game_launcher.h"
 #include "model/game_catalog.h"
 #include "model/step_sizer.h"
 #include "ui/game_tile.h"
@@ -13,9 +14,12 @@
 #include <gtest/gtest.h>
 
 #include <QTemporaryDir>
+#include <QTest>
 
 #include <algorithm>
+#include <cstdlib>
 #include <fstream>
+#include <optional>
 #include <vector>
 
 namespace showroom {
@@ -183,6 +187,156 @@ TEST_F(WindowFixture, a_screen_too_small_for_any_step_still_opens_a_window)
     window.stepUp();
     window.stepDown();
     EXPECT_EQ(window.tileWidth(), kMinTileWidthPx);
+}
+
+// Records what the window asked for and plays the launcher's signals
+// back, so the wiring is tested without any child process.
+class FakeLauncher : public GameLauncher {
+public:
+    FakeLauncher() : GameLauncher("/nonexistent/engine", "/nonexistent/cache") {}
+
+    bool launch(const GameDefinition& game, std::string& error) override
+    {
+        if (refuse_launch) {
+            error = "refused by the fake";
+            return false;
+        }
+        launched_slugs.push_back(game.slug());
+        return true;
+    }
+
+    void stop() override { ++stop_calls; }
+
+    void simulateStarted(const QString& slug) { emit gameStarted(slug); }
+    void simulateEnded(const QString& slug) { emit gameEnded(slug); }
+    void simulateFailed(const QString& slug, const QString& reason)
+    {
+        emit launchFailed(slug, reason);
+    }
+
+    std::vector<std::string> launched_slugs;
+    int stop_calls = 0;
+    bool refuse_launch = false;
+};
+
+class LaunchFixture : public WindowFixture {
+protected:
+    void SetUp() override
+    {
+        const char* saved = std::getenv("SHOWROOM_CACHE_DIR");
+        saved_cache_ = saved ? std::optional<std::string>(saved) : std::nullopt;
+        cache_ = std::filesystem::path(dir_.path().toStdString()) / "cache";
+        setenv("SHOWROOM_CACHE_DIR", cache_.string().c_str(), 1);
+        std::filesystem::create_directories(cache_ / "installs" / "doom");
+    }
+
+    void TearDown() override
+    {
+        if (saved_cache_.has_value()) {
+            setenv("SHOWROOM_CACHE_DIR", saved_cache_->c_str(), 1);
+        } else {
+            unsetenv("SHOWROOM_CACHE_DIR");
+        }
+    }
+
+    static QString nonLaunchableSlug()
+    {
+        for (std::size_t i = 0; i < catalog().size(); ++i) {
+            if (!catalog().at(i).isLaunchable()) {
+                return QString::fromStdString(catalog().at(i).slug());
+            }
+        }
+        return {};
+    }
+
+    std::filesystem::path cache_;
+    std::optional<std::string> saved_cache_;
+};
+
+TEST_F(LaunchFixture, a_tile_with_an_install_directory_starts_ready)
+{
+    // A leftover install directory for a game without a launch executable
+    // must not put Play on its tile.
+    const QString other = nonLaunchableSlug();
+    ASSERT_FALSE(other.isEmpty());
+    std::filesystem::create_directories(cache_ / "installs" / other.toStdString());
+
+    FakeLauncher launcher;
+    MainWindow window(catalog(), assetsDir(), settings(), sizer(), &launcher);
+
+    ASSERT_NE(window.grid()->tileFor("doom"), nullptr);
+    EXPECT_EQ(window.grid()->tileFor("doom")->state(), TileState::Ready);
+    EXPECT_EQ(window.grid()->tileFor(other)->state(), TileState::NoRecipe);
+}
+
+TEST_F(LaunchFixture, without_a_launcher_no_tile_reads_the_cache)
+{
+    MainWindow window(catalog(), assetsDir(), settings(), sizer());
+
+    EXPECT_EQ(window.grid()->tileFor("doom")->state(), TileState::NotDownloaded);
+}
+
+TEST_F(LaunchFixture, play_on_a_ready_tile_asks_the_launcher)
+{
+    FakeLauncher launcher;
+    MainWindow window(catalog(), assetsDir(), settings(), sizer(), &launcher);
+
+    GameTile* tile = window.grid()->tileFor("doom");
+    QTest::mouseClick(tile, Qt::LeftButton);
+
+    ASSERT_EQ(launcher.launched_slugs.size(), 1u);
+    EXPECT_EQ(launcher.launched_slugs.front(), "doom");
+}
+
+TEST_F(LaunchFixture, the_tile_follows_the_launcher_through_a_run)
+{
+    FakeLauncher launcher;
+    MainWindow window(catalog(), assetsDir(), settings(), sizer(), &launcher);
+    GameTile* tile = window.grid()->tileFor("doom");
+
+    launcher.simulateStarted("doom");
+    EXPECT_EQ(tile->state(), TileState::Running);
+
+    launcher.simulateEnded("doom");
+    EXPECT_EQ(tile->state(), TileState::Ready);
+}
+
+TEST_F(LaunchFixture, the_action_on_a_running_tile_is_stop)
+{
+    FakeLauncher launcher;
+    MainWindow window(catalog(), assetsDir(), settings(), sizer(), &launcher);
+    GameTile* tile = window.grid()->tileFor("doom");
+
+    launcher.simulateStarted("doom");
+    QTest::mouseClick(tile, Qt::LeftButton);
+
+    EXPECT_EQ(launcher.stop_calls, 1);
+    EXPECT_TRUE(launcher.launched_slugs.empty());
+}
+
+TEST_F(LaunchFixture, a_launch_failure_leaves_the_tile_ready)
+{
+    FakeLauncher launcher;
+    MainWindow window(catalog(), assetsDir(), settings(), sizer(), &launcher);
+    GameTile* tile = window.grid()->tileFor("doom");
+
+    QTest::mouseClick(tile, Qt::LeftButton);
+    launcher.simulateFailed("doom", "the engine went missing");
+
+    EXPECT_EQ(tile->state(), TileState::Ready);
+}
+
+TEST_F(LaunchFixture, a_refused_launch_keeps_the_tile_ready)
+{
+    FakeLauncher launcher;
+    launcher.refuse_launch = true;
+    MainWindow window(catalog(), assetsDir(), settings(), sizer(), &launcher);
+    GameTile* tile = window.grid()->tileFor("doom");
+
+    QTest::mouseClick(tile, Qt::LeftButton);
+
+    EXPECT_EQ(tile->state(), TileState::Ready);
+    EXPECT_TRUE(launcher.launched_slugs.empty());
 }
 
 } // namespace

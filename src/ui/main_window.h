@@ -15,6 +15,7 @@
 
 namespace showroom {
 
+class GameLauncher;
 class Sidebar;
 class TileGrid;
 
@@ -26,14 +27,17 @@ class MainWindow : public QMainWindow {
 public:
     // The sizer is passed in so a test can state a screen; measuring the
     // primary screen here would make every window test depend on the
-    // platform plugin's idea of a display.
+    // platform plugin's idea of a display. The launcher is borrowed, not
+    // owned; without one the tiles stay static and touch no cache.
     MainWindow(const GameCatalog& catalog, const std::filesystem::path& assets_dir,
-               Settings settings, StepSizer sizer, QWidget* parent = nullptr);
+               Settings settings, StepSizer sizer, GameLauncher* launcher = nullptr,
+               QWidget* parent = nullptr);
 
     static StepSizer sizerForPrimaryScreen();
 
     int tileWidth() const { return tile_width_px_; }
     const StepSizer& sizer() const { return sizer_; }
+    TileGrid* grid() const { return grid_; }
 
 public slots:
     void stepUp();
@@ -45,6 +49,7 @@ protected:
 private:
     void applyTileWidth(int width_px);
     void showAbout();
+    void onTileAction(const QString& slug);
 
     // Fixed for the life of the window: dragged to a smaller monitor it
     // keeps its step rather than re-measuring behind the user's back.
@@ -53,6 +58,7 @@ private:
     GameCatalog catalog_;
     std::filesystem::path assets_dir_;
 
+    GameLauncher* launcher_ = nullptr;
     Sidebar* sidebar_ = nullptr;
     TileGrid* grid_ = nullptr;
     int tile_width_px_ = 0;

@@ -6,9 +6,11 @@
 
 #include <gtest/gtest.h>
 
+#include <QCoreApplication>
 #include <QTemporaryDir>
 
 #include <cstdlib>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -23,13 +25,16 @@ protected:
     {
         saved_cache_ = savedValue("SHOWROOM_CACHE_DIR");
         saved_xdg_ = savedValue("XDG_CACHE_HOME");
+        saved_engine_ = savedValue("SHOWROOM_ENGINE_BINARY");
         setenv("SHOWROOM_CACHE_DIR", base().string().c_str(), 1);
+        unsetenv("SHOWROOM_ENGINE_BINARY");
     }
 
     void TearDown() override
     {
         restore("SHOWROOM_CACHE_DIR", saved_cache_);
         restore("XDG_CACHE_HOME", saved_xdg_);
+        restore("SHOWROOM_ENGINE_BINARY", saved_engine_);
     }
 
     std::filesystem::path base() const
@@ -58,6 +63,7 @@ protected:
     QTemporaryDir dir_;
     std::optional<std::string> saved_cache_;
     std::optional<std::string> saved_xdg_;
+    std::optional<std::string> saved_engine_;
 };
 
 TEST_F(PathsFixture, the_cache_base_can_be_pointed_somewhere_else)
@@ -100,6 +106,39 @@ TEST_F(PathsFixture, the_run_conf_sits_directly_in_the_cache_base)
 {
     EXPECT_EQ(Paths::runConfFile(), base() / "run.conf");
     EXPECT_EQ(Paths::runConfFile().parent_path(), Paths::cacheDir());
+}
+
+TEST_F(PathsFixture, the_engine_binary_override_wins_when_it_exists)
+{
+    const auto engine = std::filesystem::path(dir_.path().toStdString())
+                      / "engine-binary";
+    std::ofstream(engine) << "stub";
+    setenv("SHOWROOM_ENGINE_BINARY", engine.string().c_str(), 1);
+
+    EXPECT_EQ(Paths::engineBinary(), engine);
+}
+
+TEST_F(PathsFixture, a_missing_engine_binary_override_falls_back)
+{
+    const auto missing = std::filesystem::path(dir_.path().toStdString())
+                       / "no-such-engine";
+    setenv("SHOWROOM_ENGINE_BINARY", missing.string().c_str(), 1);
+
+    EXPECT_NE(Paths::engineBinary(), missing);
+}
+
+TEST_F(PathsFixture, the_engine_binary_defaults_to_beside_the_executable)
+{
+#ifdef _WIN32
+    const std::filesystem::path expected_name = "dosbox.exe";
+#else
+    const std::filesystem::path expected_name = "dosbox";
+#endif
+    const auto path = Paths::engineBinary();
+    EXPECT_EQ(path.filename(), expected_name);
+    EXPECT_EQ(path.parent_path(),
+              std::filesystem::path(
+                      QCoreApplication::applicationDirPath().toStdString()));
 }
 
 TEST_F(PathsFixture, a_safe_slug_lands_in_its_own_directory)

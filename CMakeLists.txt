@@ -65,6 +65,7 @@ target_link_libraries(showroom_model PUBLIC
 qt_add_library(showroom_engine STATIC
   src/engine/api_client.cpp
   src/engine/engine_process.cpp
+  src/engine/game_launcher.cpp
 )
 
 target_link_libraries(showroom_engine PUBLIC
@@ -94,6 +95,7 @@ qt_add_library(showroom_ui STATIC
 
 target_link_libraries(showroom_ui PUBLIC
   showroom_model
+  showroom_engine
   Qt6::Widgets
   Qt6::Network
 )

@@ -136,6 +136,26 @@ std::filesystem::path Paths::assetsDir()
     return beside_binary;
 }
 
+std::filesystem::path Paths::engineBinary()
+{
+    if (const char* override_path = std::getenv("SHOWROOM_ENGINE_BINARY")) {
+        const std::filesystem::path candidate(override_path);
+        std::error_code error;
+        if (std::filesystem::is_regular_file(candidate, error)) {
+            return candidate;
+        }
+        log_warn(kLogComponent,
+                 "SHOWROOM_ENGINE_BINARY is not a file: %s",
+                 override_path);
+    }
+#ifdef _WIN32
+    constexpr const char* kEngineName = "dosbox.exe";
+#else
+    constexpr const char* kEngineName = "dosbox";
+#endif
+    return fromQString(QCoreApplication::applicationDirPath()) / kEngineName;
+}
+
 std::filesystem::path Paths::cacheDir()
 {
     if (const char* override_dir = std::getenv("SHOWROOM_CACHE_DIR")) {

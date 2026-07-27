@@ -5,7 +5,11 @@
 #include "ui/main_window.h"
 
 #include "app/logging.h"
+#include "app/paths.h"
+#include "engine/game_launcher.h"
+#include "model/tile_state.h"
 #include "ui/about_dialog.h"
+#include "ui/game_tile.h"
 #include "ui/sidebar.h"
 #include "ui/theme.h"
 #include "ui/tile_grid.h"
@@ -40,12 +44,13 @@ StepSizer MainWindow::sizerForPrimaryScreen()
 
 MainWindow::MainWindow(const GameCatalog& catalog,
                        const std::filesystem::path& assets_dir, Settings settings,
-                       StepSizer sizer, QWidget* parent)
+                       StepSizer sizer, GameLauncher* launcher, QWidget* parent)
         : QMainWindow(parent),
           sizer_(std::move(sizer)),
           settings_(std::move(settings)),
           catalog_(catalog),
-          assets_dir_(assets_dir)
+          assets_dir_(assets_dir),
+          launcher_(launcher)
 {
     setWindowTitle(QStringLiteral("dosbox-automation showroom"));
     setAutoFillBackground(true);
@@ -68,6 +73,49 @@ MainWindow::MainWindow(const GameCatalog& catalog,
 
     grid_ = new TileGrid(catalog_, assets_dir_ / "games", sizer_.chrome(), central);
     layout->addWidget(grid_, 1);
+
+    if (launcher_ != nullptr) {
+        std::error_code probe_error;
+        for (std::size_t i = 0; i < catalog_.size(); ++i) {
+            const GameDefinition& game = catalog_.at(i);
+            // A game that cannot launch keeps its NoRecipe tile even if an
+            // install directory is lying around.
+            if (!game.isLaunchable() || !isSafeSlug(game.slug())) {
+                continue;
+            }
+            if (std::filesystem::is_directory(Paths::installsDir() / game.slug(),
+                                              probe_error)) {
+                if (GameTile* tile = grid_->tileFor(
+                            QString::fromStdString(game.slug()))) {
+                    tile->setState(TileState::Ready);
+                }
+            }
+        }
+
+        connect(grid_, &TileGrid::actionTriggered, this, &MainWindow::onTileAction);
+        connect(launcher_, &GameLauncher::gameStarted, this, [this](const QString& slug) {
+            if (GameTile* tile = grid_->tileFor(slug)) {
+                tile->setState(TileState::Running);
+            }
+        });
+        connect(launcher_, &GameLauncher::gameEnded, this, [this](const QString& slug) {
+            if (GameTile* tile = grid_->tileFor(slug)) {
+                tile->setState(TileState::Ready);
+            }
+        });
+        connect(launcher_,
+                &GameLauncher::launchFailed,
+                this,
+                [this](const QString& slug, const QString& reason) {
+                    log_error(kLogComponent,
+                              "launch of %s failed: %s",
+                              slug.toStdString().c_str(),
+                              reason.toStdString().c_str());
+                    if (GameTile* tile = grid_->tileFor(slug)) {
+                        tile->setState(TileState::Ready);
+                    }
+                });
+    }
 
     setCentralWidget(central);
 
@@ -154,6 +202,32 @@ void MainWindow::resizeEvent(QResizeEvent* event)
     const int width = sizer_.tileWidthForWindowSize(size().width(), size().height());
     if (width != tile_width_px_) {
         applyTileWidth(width);
+    }
+}
+
+void MainWindow::onTileAction(const QString& slug)
+{
+    if (launcher_ == nullptr) {
+        return;
+    }
+    GameTile* tile = grid_->tileFor(slug);
+    const GameDefinition* game = catalog_.find(slug.toStdString());
+    if (tile == nullptr || game == nullptr) {
+        return;
+    }
+    switch (actionFor(tile->state())) {
+    case TileAction::Play: {
+        std::string error;
+        if (!launcher_->launch(*game, error)) {
+            log_error(kLogComponent,
+                      "cannot launch %s: %s",
+                      game->slug().c_str(),
+                      error.c_str());
+        }
+        break;
+    }
+    case TileAction::Stop: launcher_->stop(); break;
+    default: break;
     }
 }
 

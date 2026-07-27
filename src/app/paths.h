@@ -42,6 +42,10 @@ public:
     // mountable.
     static std::filesystem::path runConfFile() { return cacheDir() / "run.conf"; }
 
+    // SHOWROOM_ENGINE_BINARY when it names an existing file, else the
+    // bundled binary beside the executable.
+    static std::filesystem::path engineBinary();
+
     static std::filesystem::path settingsFile() { return cacheDir() / "showroom.ini"; }
 };
 
