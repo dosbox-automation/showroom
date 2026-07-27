@@ -29,6 +29,33 @@ gtest_discover_tests(showroom_tests
 # from quietly growing a Qt dependency.
 find_package(Qt6 6.4 REQUIRED COMPONENTS Test)
 
+# The EngineProcess tests spawn this instead of the real emulator, so
+# they stay hermetic while still exercising a genuine child process.
+add_executable(fake_engine
+  engine/fake_engine.cpp
+)
+
+qt_add_executable(showroom_engine_tests
+  engine/engine_test_main.cpp
+  engine/engine_process_tests.cpp
+)
+
+target_link_libraries(showroom_engine_tests PRIVATE
+  showroom_engine
+  Qt6::Test
+  GTest::gtest
+)
+
+target_compile_definitions(showroom_engine_tests PRIVATE
+  FAKE_ENGINE_PATH="$<TARGET_FILE:fake_engine>"
+)
+
+add_dependencies(showroom_engine_tests fake_engine)
+
+gtest_discover_tests(showroom_engine_tests
+  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
+
 qt_add_executable(showroom_ui_tests
   ui/ui_test_main.cpp
   app/paths_tests.cpp

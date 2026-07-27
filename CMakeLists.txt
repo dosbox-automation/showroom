@@ -60,6 +60,17 @@ target_link_libraries(showroom_model PUBLIC
   tomlplusplus::tomlplusplus
 )
 
+# Child-process tier: needs Qt Core but neither widgets nor the model's
+# purity, so it sits between showroom_model and showroom_ui.
+qt_add_library(showroom_engine STATIC
+  src/engine/engine_process.cpp
+)
+
+target_link_libraries(showroom_engine PUBLIC
+  showroom_model
+  Qt6::Core
+)
+
 # The sidebar badge, set here so the release train has one place to
 # change rather than a literal going stale in a widget.
 set(SHOWROOM_ENGINE_VERSION "0.84-da3" CACHE STRING
