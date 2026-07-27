@@ -46,6 +46,7 @@ endif()
 # Pure logic and infrastructure, no Qt: this carries the test weight and
 # both the application and the test binary link it.
 add_library(showroom_model STATIC
+  src/engine/conf_writer.cpp
   src/imported/log.cpp
   src/model/game_definition.cpp
   src/model/game_catalog.cpp

@@ -6,6 +6,7 @@ find_package(GTest REQUIRED)
 
 add_executable(showroom_tests
   smoke_tests.cpp
+  engine/conf_writer_tests.cpp
   imported/log_tests.cpp
   model/game_definition_tests.cpp
   model/game_catalog_tests.cpp
