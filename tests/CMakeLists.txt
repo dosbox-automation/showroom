@@ -37,6 +37,7 @@ add_executable(fake_engine
 
 qt_add_executable(showroom_engine_tests
   engine/engine_test_main.cpp
+  engine/api_client_tests.cpp
   engine/engine_process_tests.cpp
 )
 

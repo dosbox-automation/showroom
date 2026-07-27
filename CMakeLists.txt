@@ -63,12 +63,14 @@ target_link_libraries(showroom_model PUBLIC
 # Child-process tier: needs Qt Core but neither widgets nor the model's
 # purity, so it sits between showroom_model and showroom_ui.
 qt_add_library(showroom_engine STATIC
+  src/engine/api_client.cpp
   src/engine/engine_process.cpp
 )
 
 target_link_libraries(showroom_engine PUBLIC
   showroom_model
   Qt6::Core
+  Qt6::Network
 )
 
 # The sidebar badge, set here so the release train has one place to
