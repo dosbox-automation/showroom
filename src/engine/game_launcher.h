@@ -6,6 +6,7 @@
 #define SHOWROOM_ENGINE_GAME_LAUNCHER_H
 
 #include "engine/api_client.h"
+#include "engine/conf_writer.h"
 #include "engine/engine_process.h"
 #include "model/game_definition.h"
 
@@ -24,8 +25,9 @@ class GameLauncher : public QObject {
     Q_OBJECT
 
 public:
-    // The engine's built-in webserver port; the run conf does not set one.
-    static constexpr quint16 kDefaultEnginePort = 8386;
+    // ConfWriter pins this port into every run conf, so the client side
+    // has to dial the same number.
+    static constexpr quint16 kDefaultEnginePort = kShowroomEnginePort;
 
     GameLauncher(std::filesystem::path engine_binary, std::filesystem::path cache_base,
                  quint16 engine_port = kDefaultEnginePort, QObject* parent = nullptr);
@@ -33,6 +35,10 @@ public:
 
     virtual bool launch(const GameDefinition& game, std::string& error);
     virtual void stop();
+    // Blocks until the child has ended, bounded by the stop escalation
+    // plus a margin; returns whether the child is gone. For the
+    // showroom's own exit, which must never hang on a stuck emulator.
+    virtual bool shutdownAndWait();
     virtual bool isRunning() const;
     virtual QString runningSlug() const;
 
@@ -44,6 +50,8 @@ signals:
     void launchFailed(const QString& slug, const QString& reason);
 
 private:
+    static constexpr int kShutdownMarginMs = 2000;
+
     std::filesystem::path engine_binary_;
     std::filesystem::path cache_base_;
     quint16 engine_port_;

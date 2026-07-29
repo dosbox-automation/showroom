@@ -49,6 +49,9 @@ EngineProcess::EngineProcess(std::filesystem::path engine_binary, QObject* paren
 EngineProcess::~EngineProcess()
 {
     if (isRunning()) {
+        // Nothing may react to a dying object: waitForFinished delivers the
+        // child's death, and that emission must stop here.
+        process_.blockSignals(true);
         process_.kill();
         process_.waitForFinished(1000);
     }

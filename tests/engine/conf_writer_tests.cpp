@@ -130,6 +130,9 @@ TEST_F(ConfWriterDir, renders_engine_settings_from_the_definition)
     EXPECT_TRUE(hasLine(*conf, "[webserver]"));
     EXPECT_TRUE(hasLine(*conf, "webserver_enabled = true"));
     EXPECT_TRUE(hasLine(*conf, "webserver_token_file = false"));
+    // Off the engine default 8386, which a developer instance on the same
+    // box usually owns.
+    EXPECT_TRUE(hasLine(*conf, "webserver_port = 8686"));
 }
 
 TEST_F(ConfWriterDir, autoexec_mounts_installs_under_the_cache_base_and_runs_the_game)

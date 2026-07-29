@@ -7,11 +7,16 @@
 
 #include "model/game_definition.h"
 
+#include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <string>
 
 namespace showroom {
+
+// Off the engine default 8386, which a developer instance on the same
+// box usually owns. Written into the run conf and dialed by ApiClient.
+inline constexpr std::uint16_t kShowroomEnginePort = 8686;
 
 // The engine treats the conf file's directory as the allowed mount
 // root, so the conf goes into the cache base and nowhere else.

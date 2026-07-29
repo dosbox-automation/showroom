@@ -49,6 +49,7 @@ add_library(showroom_model STATIC
   src/engine/conf_writer.cpp
   src/imported/log.cpp
   src/model/game_definition.cpp
+  src/model/install_check.cpp
   src/model/game_catalog.cpp
   src/model/tile_state.cpp
   src/model/step_sizer.cpp

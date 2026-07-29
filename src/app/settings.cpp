@@ -13,6 +13,7 @@ namespace showroom {
 namespace {
 
 constexpr const char* kTileWidthKey = "window/tile_width_px";
+constexpr const char* kShowPortNoticeKey = "launch/show_port_notice";
 
 // A stored width larger than any screen would still be filtered by the
 // sizer, but a wildly out of range number should never get that far.
@@ -32,6 +33,22 @@ int Settings::tileWidth() const
         return 0;
     }
     return width;
+}
+
+bool Settings::showPortNotice() const
+{
+    QSettings settings(QString::fromStdString(file_.string()), QSettings::IniFormat);
+
+    // String-compared rather than toBool(): toBool() maps garbage to
+    // false, which would suppress the notice on a corrupt file.
+    return settings.value(QString::fromLatin1(kShowPortNoticeKey)).toString()
+        != QLatin1String("false");
+}
+
+void Settings::setShowPortNotice(bool show)
+{
+    QSettings settings(QString::fromStdString(file_.string()), QSettings::IniFormat);
+    settings.setValue(QString::fromLatin1(kShowPortNoticeKey), show);
 }
 
 void Settings::setTileWidth(int width_px)

@@ -7,6 +7,7 @@
 #include "app/logging.h"
 #include "app/paths.h"
 #include "engine/game_launcher.h"
+#include "model/install_check.h"
 #include "model/tile_state.h"
 #include "ui/about_dialog.h"
 #include "ui/game_tile.h"
@@ -16,8 +17,10 @@
 #include "ui/version.h"
 
 #include <QApplication>
+#include <QCheckBox>
 #include <QGuiApplication>
 #include <QHBoxLayout>
+#include <QMessageBox>
 #include <QScreen>
 #include <QShortcut>
 
@@ -98,11 +101,7 @@ MainWindow::MainWindow(const GameCatalog& catalog,
                 tile->setState(TileState::Running);
             }
         });
-        connect(launcher_, &GameLauncher::gameEnded, this, [this](const QString& slug) {
-            if (GameTile* tile = grid_->tileFor(slug)) {
-                tile->setState(TileState::Ready);
-            }
-        });
+        connect(launcher_, &GameLauncher::gameEnded, this, &MainWindow::onGameEnded);
         connect(launcher_,
                 &GameLauncher::launchFailed,
                 this,
@@ -205,6 +204,16 @@ void MainWindow::resizeEvent(QResizeEvent* event)
     }
 }
 
+void MainWindow::closeEvent(QCloseEvent* event)
+{
+    // Bounded by the launcher's stop escalation: a stuck emulator ends
+    // killed rather than keeping the showroom alive.
+    if (launcher_ != nullptr && launcher_->isRunning()) {
+        launcher_->shutdownAndWait();
+    }
+    QMainWindow::closeEvent(event);
+}
+
 void MainWindow::onTileAction(const QString& slug)
 {
     if (launcher_ == nullptr) {
@@ -217,18 +226,163 @@ void MainWindow::onTileAction(const QString& slug)
     }
     switch (actionFor(tile->state())) {
     case TileAction::Play: {
-        std::string error;
-        if (!launcher_->launch(*game, error)) {
-            log_error(kLogComponent,
-                      "cannot launch %s: %s",
-                      game->slug().c_str(),
-                      error.c_str());
+        if (!ensureIntactOrOffer(*game)) {
+            break;
         }
+        if (!confirmPortNoticeIfNeeded()) {
+            break;
+        }
+        if (launcher_->isRunning()) {
+            const GameDefinition* running = catalog_.find(
+                    launcher_->runningSlug().toStdString());
+            const QString running_title = running != nullptr
+                                                ? QString::fromStdString(running->title())
+                                                : launcher_->runningSlug();
+            if (!confirmGameSwitch(running_title,
+                                   QString::fromStdString(game->title()))) {
+                break;
+            }
+            pending_switch_slug_ = game->slug();
+            launcher_->stop();
+            break;
+        }
+        launchGame(*game);
         break;
     }
     case TileAction::Stop: launcher_->stop(); break;
     default: break;
     }
+}
+
+void MainWindow::onGameEnded(const QString& slug)
+{
+    if (GameTile* tile = grid_->tileFor(slug)) {
+        tile->setState(TileState::Ready);
+    }
+    if (pending_switch_slug_.empty()) {
+        return;
+    }
+    const GameDefinition* pending = catalog_.find(pending_switch_slug_);
+    pending_switch_slug_.clear();
+    // Re-checked: the files can change between accepting the switch and
+    // the running game's exit.
+    if (pending != nullptr && ensureIntactOrOffer(*pending)) {
+        launchGame(*pending);
+    }
+}
+
+bool MainWindow::confirmPortNoticeIfNeeded()
+{
+    if (!settings_.showPortNotice()) {
+        return true;
+    }
+    bool dont_show_again = false;
+    if (!confirmPortNotice(dont_show_again)) {
+        return false;
+    }
+    // Only an accepted notice may suppress: honoring the checkbox on a
+    // decline would silently disable launching for good.
+    if (dont_show_again) {
+        settings_.setShowPortNotice(false);
+    }
+    return true;
+}
+
+bool MainWindow::ensureIntactOrOffer(const GameDefinition& game)
+{
+    const auto install_dir = Paths::installDirFor(game.slug());
+    if (!install_dir) {
+        return false;
+    }
+    const auto damage = installDamage(game, *install_dir);
+    if (damage.empty()) {
+        return true;
+    }
+    log_warn(kLogComponent,
+             "%s failed the pre-launch check, %d problems, first: %s",
+             game.slug().c_str(),
+             static_cast<int>(damage.size()),
+             damage.front().c_str());
+    if (offerReinstall(QString::fromStdString(game.title()),
+                       QString::fromStdString(damage.front()))) {
+        demoteDamagedTile(game);
+    }
+    return false;
+}
+
+void MainWindow::demoteDamagedTile(const GameDefinition& game)
+{
+    GameTile* tile = grid_->tileFor(QString::fromStdString(game.slug()));
+    if (tile == nullptr) {
+        return;
+    }
+    // Reinstallation rides the normal download/install road, so the tile
+    // goes back to the station whose artifact is still on disk.
+    std::error_code ec;
+    const auto downloads = Paths::downloadDirFor(game.slug());
+    const bool archive_present = downloads.has_value()
+                              && std::filesystem::is_directory(*downloads, ec)
+                              && std::filesystem::directory_iterator(*downloads, ec)
+                                         != std::filesystem::directory_iterator();
+    tile->setState(archive_present ? TileState::Downloaded : TileState::NotDownloaded);
+}
+
+void MainWindow::launchGame(const GameDefinition& game)
+{
+    std::string error;
+    if (!launcher_->launch(game, error)) {
+        log_error(kLogComponent,
+                  "cannot launch %s: %s",
+                  game.slug().c_str(),
+                  error.c_str());
+    }
+}
+
+bool MainWindow::confirmPortNotice(bool& dont_show_again)
+{
+    QMessageBox box(QMessageBox::Information,
+                    QStringLiteral("Before the game starts"),
+                    QStringLiteral("The showroom controls the game through its "
+                                   "bundled dosbox-automation engine over "
+                                   "localhost port %1.\n\nIf a firewall asks "
+                                   "about this connection, allow it - without "
+                                   "it the game cannot start or be "
+                                   "controlled.\n\nStart the game?")
+                            .arg(kShowroomEnginePort),
+                    QMessageBox::Yes | QMessageBox::No,
+                    this);
+    box.setDefaultButton(QMessageBox::Yes);
+    auto* checkbox = new QCheckBox(QStringLiteral("Do not show this again"), &box);
+    box.setCheckBox(checkbox);
+
+    const bool accepted = box.exec() == QMessageBox::Yes;
+    dont_show_again = checkbox->isChecked();
+    return accepted;
+}
+
+bool MainWindow::offerReinstall(const QString& title, const QString& detail)
+{
+    return QMessageBox::question(this,
+                                 QStringLiteral("Damaged install"),
+                                 QStringLiteral("%1's files are missing or damaged (%2). "
+                                                "Reinstall %1?")
+                                         .arg(title, detail),
+                                 QMessageBox::Yes | QMessageBox::No,
+                                 QMessageBox::No)
+        == QMessageBox::Yes;
+}
+
+bool MainWindow::confirmGameSwitch(const QString& running_title,
+                                   const QString& pending_title)
+{
+    return QMessageBox::question(this,
+                                 QStringLiteral("Game running"),
+                                 QStringLiteral(
+                                         "%1 is still running. Stop it and start %2?")
+                                         .arg(running_title, pending_title),
+                                 QMessageBox::Yes | QMessageBox::No,
+                                 QMessageBox::No)
+        == QMessageBox::Yes;
 }
 
 void MainWindow::showAbout()

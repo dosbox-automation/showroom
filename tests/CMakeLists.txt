@@ -9,6 +9,7 @@ add_executable(showroom_tests
   engine/conf_writer_tests.cpp
   imported/log_tests.cpp
   model/game_definition_tests.cpp
+  model/install_check_tests.cpp
   model/game_catalog_tests.cpp
   model/tile_state_tests.cpp
   model/step_sizer_tests.cpp
@@ -61,6 +62,7 @@ gtest_discover_tests(showroom_engine_tests
 qt_add_executable(showroom_ui_tests
   ui/ui_test_main.cpp
   app/paths_tests.cpp
+  app/settings_tests.cpp
   ui/legend_bar_tests.cpp
   ui/game_tile_tests.cpp
   ui/main_window_tests.cpp

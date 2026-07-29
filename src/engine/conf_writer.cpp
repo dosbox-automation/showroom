@@ -136,7 +136,8 @@ std::optional<std::string> ConfWriter::renderConf(const GameDefinition& game,
     }
     conf << "[webserver]\n"
          << "webserver_enabled = true\n"
-         << "webserver_token_file = false\n\n";
+         << "webserver_token_file = false\n"
+         << "webserver_port = " << kShowroomEnginePort << "\n\n";
 
     conf << "[autoexec]\n";
     conf << "mount c \"" << (cache_base / "installs").string() << "\"\n";

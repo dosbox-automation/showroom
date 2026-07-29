@@ -37,6 +37,12 @@ public:
     void setShutdownRequester(ShutdownRequester requester);
     void setStopTimeouts(int graceful_ms, int terminate_ms);
 
+    // Worst case from stop() to the kill, for callers bounding a wait.
+    int stopEscalationBudgetMs() const
+    {
+        return graceful_timeout_ms_ + terminate_timeout_ms_;
+    }
+
     const std::string& token() const;
 
 signals:

@@ -12,6 +12,7 @@
 #include <QMainWindow>
 
 #include <filesystem>
+#include <string>
 
 namespace showroom {
 
@@ -45,11 +46,24 @@ public slots:
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
+
+    // Virtual so window tests can answer without a desktop; the production
+    // implementations show modal dialogs.
+    virtual bool confirmGameSwitch(const QString& running_title,
+                                   const QString& pending_title);
+    virtual bool offerReinstall(const QString& title, const QString& detail);
+    virtual bool confirmPortNotice(bool& dont_show_again);
 
 private:
     void applyTileWidth(int width_px);
     void showAbout();
     void onTileAction(const QString& slug);
+    void onGameEnded(const QString& slug);
+    void launchGame(const GameDefinition& game);
+    bool ensureIntactOrOffer(const GameDefinition& game);
+    void demoteDamagedTile(const GameDefinition& game);
+    bool confirmPortNoticeIfNeeded();
 
     // Fixed for the life of the window: dragged to a smaller monitor it
     // keeps its step rather than re-measuring behind the user's back.
@@ -62,6 +76,10 @@ private:
     Sidebar* sidebar_ = nullptr;
     TileGrid* grid_ = nullptr;
     int tile_width_px_ = 0;
+
+    // Set when the user accepts a switch; the game launches once the
+    // running one has actually exited, never beside it.
+    std::string pending_switch_slug_;
 
     // resizeEvent applies a step, which resizes the window, which arrives
     // back here.

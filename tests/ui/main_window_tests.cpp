@@ -207,6 +207,16 @@ public:
 
     void stop() override { ++stop_calls; }
 
+    bool shutdownAndWait() override
+    {
+        ++shutdown_waits;
+        fake_running_slug.clear();
+        return true;
+    }
+
+    bool isRunning() const override { return !fake_running_slug.isEmpty(); }
+    QString runningSlug() const override { return fake_running_slug; }
+
     void simulateStarted(const QString& slug) { emit gameStarted(slug); }
     void simulateEnded(const QString& slug) { emit gameEnded(slug); }
     void simulateFailed(const QString& slug, const QString& reason)
@@ -216,7 +226,9 @@ public:
 
     std::vector<std::string> launched_slugs;
     int stop_calls = 0;
+    int shutdown_waits = 0;
     bool refuse_launch = false;
+    QString fake_running_slug;
 };
 
 class LaunchFixture : public WindowFixture {
@@ -249,6 +261,29 @@ protected:
         return {};
     }
 
+    static void writeGame(const std::filesystem::path& games_dir, const std::string& slug,
+                          const std::string& title, int rank,
+                          const std::string& extra_toml = {})
+    {
+        std::filesystem::create_directories(games_dir / slug);
+        std::ofstream out(games_dir / slug / (slug + ".toml"));
+        out << "slug = \"" << slug << "\"\n"
+            << "title = \"" << title << "\"\n"
+            << "rank = " << rank << "\n"
+            << "license = \"shareware\"\n"
+            << "[sources.primary]\n"
+            << "url = \"https://example.invalid/" << slug << ".zip\"\n"
+            << "[dosbox]\n"
+            << "machine = \"svga_s3\"\n"
+            << "cpu_cycles = 3000\n"
+            << "cpu_cycles_protected = 3000\n"
+            << "[launch]\n"
+            << "executable = \"GAME.EXE\"\n"
+            << "[install]\n"
+            << "max_runtime_seconds = 60\n"
+            << extra_toml;
+    }
+
     std::filesystem::path cache_;
     std::optional<std::string> saved_cache_;
 };
@@ -276,18 +311,6 @@ TEST_F(LaunchFixture, without_a_launcher_no_tile_reads_the_cache)
     EXPECT_EQ(window.grid()->tileFor("doom")->state(), TileState::NotDownloaded);
 }
 
-TEST_F(LaunchFixture, play_on_a_ready_tile_asks_the_launcher)
-{
-    FakeLauncher launcher;
-    MainWindow window(catalog(), assetsDir(), settings(), sizer(), &launcher);
-
-    GameTile* tile = window.grid()->tileFor("doom");
-    QTest::mouseClick(tile, Qt::LeftButton);
-
-    ASSERT_EQ(launcher.launched_slugs.size(), 1u);
-    EXPECT_EQ(launcher.launched_slugs.front(), "doom");
-}
-
 TEST_F(LaunchFixture, the_tile_follows_the_launcher_through_a_run)
 {
     FakeLauncher launcher;
@@ -301,42 +324,389 @@ TEST_F(LaunchFixture, the_tile_follows_the_launcher_through_a_run)
     EXPECT_EQ(tile->state(), TileState::Ready);
 }
 
-TEST_F(LaunchFixture, the_action_on_a_running_tile_is_stop)
+// Answers the confirmation dialogs from a script; a modal QMessageBox
+// under the offscreen platform would hang the test.
+class ScriptedWindow : public MainWindow {
+public:
+    using MainWindow::MainWindow;
+
+    bool accept_switch = false;
+    int questions_asked = 0;
+    QString named_running_title;
+
+    bool accept_reinstall = false;
+    int reinstall_offers = 0;
+    QString named_reinstall_title;
+
+    bool accept_port_notice = true;
+    bool tick_dont_show_again = false;
+    int port_notices = 0;
+
+protected:
+    bool confirmPortNotice(bool& dont_show_again) override
+    {
+        ++port_notices;
+        dont_show_again = tick_dont_show_again;
+        return accept_port_notice;
+    }
+
+    bool confirmGameSwitch(const QString& running_title,
+                           const QString& pending_title) override
+    {
+        ++questions_asked;
+        named_running_title = running_title;
+        (void)pending_title;
+        return accept_switch;
+    }
+
+    bool offerReinstall(const QString& title, const QString& detail) override
+    {
+        ++reinstall_offers;
+        named_reinstall_title = title;
+        (void)detail;
+        return accept_reinstall;
+    }
+};
+
+// The bundled catalogue deliberately carries one launchable game, and a
+// switch needs two, so this fixture builds its own through the real loader.
+class SwitchFixture : public LaunchFixture {
+protected:
+    void SetUp() override
+    {
+        LaunchFixture::SetUp();
+        const auto games_dir = std::filesystem::path(dir_.path().toStdString()) / "games";
+        writeGame(games_dir, "alpha", "Alpha", 1);
+        writeGame(games_dir,
+                  "beta",
+                  "Beta",
+                  2,
+                  "[install.expected_files]\n\"DATA.DAT\" = { size = 4 }\n");
+        std::filesystem::create_directories(cache_ / "installs" / "alpha");
+        std::filesystem::create_directories(cache_ / "installs" / "beta");
+        writeBetaData(4);
+        two_games_ = GameCatalog::loadFromDirectory(games_dir);
+        ASSERT_EQ(two_games_.size(), 2u);
+    }
+
+    void writeBetaData(std::size_t byte_count)
+    {
+        std::ofstream out(cache_ / "installs" / "beta" / "DATA.DAT",
+                          std::ios::binary | std::ios::trunc);
+        out << std::string(byte_count, 'x');
+    }
+
+    GameCatalog two_games_;
+};
+
+TEST_F(SwitchFixture, the_action_on_a_running_tile_is_stop)
 {
     FakeLauncher launcher;
-    MainWindow window(catalog(), assetsDir(), settings(), sizer(), &launcher);
-    GameTile* tile = window.grid()->tileFor("doom");
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+    launcher.fake_running_slug = QStringLiteral("alpha");
+    launcher.simulateStarted(QStringLiteral("alpha"));
 
-    launcher.simulateStarted("doom");
-    QTest::mouseClick(tile, Qt::LeftButton);
+    QTest::mouseClick(window.grid()->tileFor("alpha"), Qt::LeftButton);
 
     EXPECT_EQ(launcher.stop_calls, 1);
     EXPECT_TRUE(launcher.launched_slugs.empty());
 }
 
-TEST_F(LaunchFixture, a_launch_failure_leaves_the_tile_ready)
+TEST_F(SwitchFixture, a_launch_failure_leaves_the_tile_ready)
 {
     FakeLauncher launcher;
-    MainWindow window(catalog(), assetsDir(), settings(), sizer(), &launcher);
-    GameTile* tile = window.grid()->tileFor("doom");
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+    GameTile* tile = window.grid()->tileFor("alpha");
 
     QTest::mouseClick(tile, Qt::LeftButton);
-    launcher.simulateFailed("doom", "the engine went missing");
+    launcher.simulateFailed(QStringLiteral("alpha"),
+                            QStringLiteral("the engine went missing"));
 
     EXPECT_EQ(tile->state(), TileState::Ready);
 }
 
-TEST_F(LaunchFixture, a_refused_launch_keeps_the_tile_ready)
+TEST_F(SwitchFixture, a_refused_launch_keeps_the_tile_ready)
 {
     FakeLauncher launcher;
     launcher.refuse_launch = true;
-    MainWindow window(catalog(), assetsDir(), settings(), sizer(), &launcher);
-    GameTile* tile = window.grid()->tileFor("doom");
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+    GameTile* tile = window.grid()->tileFor("alpha");
 
     QTest::mouseClick(tile, Qt::LeftButton);
 
     EXPECT_EQ(tile->state(), TileState::Ready);
     EXPECT_TRUE(launcher.launched_slugs.empty());
+}
+
+TEST_F(SwitchFixture, the_first_play_asks_about_the_port_before_launching)
+{
+    FakeLauncher launcher;
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+
+    QTest::mouseClick(window.grid()->tileFor("alpha"), Qt::LeftButton);
+
+    EXPECT_EQ(window.port_notices, 1);
+    ASSERT_EQ(launcher.launched_slugs.size(), 1u);
+    EXPECT_EQ(launcher.launched_slugs.front(), "alpha");
+}
+
+TEST_F(SwitchFixture, declining_the_port_notice_stops_the_launch)
+{
+    FakeLauncher launcher;
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+    window.accept_port_notice = false;
+
+    QTest::mouseClick(window.grid()->tileFor("alpha"), Qt::LeftButton);
+
+    EXPECT_EQ(window.port_notices, 1);
+    EXPECT_TRUE(launcher.launched_slugs.empty());
+    EXPECT_EQ(window.grid()->tileFor("alpha")->state(), TileState::Ready);
+}
+
+TEST_F(SwitchFixture, dont_show_again_holds_for_the_session)
+{
+    FakeLauncher launcher;
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+    window.tick_dont_show_again = true;
+
+    QTest::mouseClick(window.grid()->tileFor("alpha"), Qt::LeftButton);
+    launcher.simulateEnded(QStringLiteral("alpha"));
+    QTest::mouseClick(window.grid()->tileFor("alpha"), Qt::LeftButton);
+
+    EXPECT_EQ(window.port_notices, 1);
+    EXPECT_EQ(launcher.launched_slugs.size(), 2u);
+}
+
+TEST_F(SwitchFixture, dont_show_again_survives_a_restart)
+{
+    FakeLauncher launcher;
+    {
+        ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+        window.tick_dont_show_again = true;
+        QTest::mouseClick(window.grid()->tileFor("alpha"), Qt::LeftButton);
+        launcher.simulateEnded(QStringLiteral("alpha"));
+    }
+
+    ScriptedWindow reopened(two_games_, assetsDir(), settings(), sizer(), &launcher);
+    QTest::mouseClick(reopened.grid()->tileFor("alpha"), Qt::LeftButton);
+
+    EXPECT_EQ(reopened.port_notices, 0);
+}
+
+TEST_F(SwitchFixture, a_declined_notice_never_suppresses_the_next_one)
+{
+    // The checkbox only counts on yes: declining with it ticked would
+    // otherwise silently disable launching for good.
+    FakeLauncher launcher;
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+    window.accept_port_notice = false;
+    window.tick_dont_show_again = true;
+
+    QTest::mouseClick(window.grid()->tileFor("alpha"), Qt::LeftButton);
+    QTest::mouseClick(window.grid()->tileFor("alpha"), Qt::LeftButton);
+
+    EXPECT_EQ(window.port_notices, 2);
+    EXPECT_TRUE(launcher.launched_slugs.empty());
+}
+
+TEST_F(SwitchFixture, closing_while_a_game_runs_shuts_it_down_first)
+{
+    FakeLauncher launcher;
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+    launcher.fake_running_slug = QStringLiteral("alpha");
+    launcher.simulateStarted(QStringLiteral("alpha"));
+
+    EXPECT_TRUE(window.close());
+    EXPECT_EQ(launcher.shutdown_waits, 1);
+}
+
+TEST_F(SwitchFixture, closing_with_nothing_running_waits_for_no_one)
+{
+    FakeLauncher launcher;
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+
+    EXPECT_TRUE(window.close());
+    EXPECT_EQ(launcher.shutdown_waits, 0);
+}
+
+TEST_F(SwitchFixture, play_with_nothing_running_asks_no_question)
+{
+    FakeLauncher launcher;
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+
+    QTest::mouseClick(window.grid()->tileFor("beta"), Qt::LeftButton);
+
+    EXPECT_EQ(window.questions_asked, 0);
+    ASSERT_EQ(launcher.launched_slugs.size(), 1u);
+    EXPECT_EQ(launcher.launched_slugs.front(), "beta");
+}
+
+TEST_F(SwitchFixture, declining_a_switch_leaves_the_running_game_alone)
+{
+    FakeLauncher launcher;
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+    launcher.fake_running_slug = QStringLiteral("alpha");
+    launcher.simulateStarted(QStringLiteral("alpha"));
+
+    QTest::mouseClick(window.grid()->tileFor("beta"), Qt::LeftButton);
+
+    EXPECT_EQ(window.questions_asked, 1);
+    EXPECT_EQ(window.named_running_title, QStringLiteral("Alpha"));
+    EXPECT_EQ(launcher.stop_calls, 0);
+    EXPECT_TRUE(launcher.launched_slugs.empty());
+}
+
+TEST_F(SwitchFixture,
+       accepting_a_switch_starts_the_second_game_only_after_the_first_exits)
+{
+    FakeLauncher launcher;
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+    launcher.fake_running_slug = QStringLiteral("alpha");
+    launcher.simulateStarted(QStringLiteral("alpha"));
+    window.accept_switch = true;
+
+    QTest::mouseClick(window.grid()->tileFor("beta"), Qt::LeftButton);
+
+    EXPECT_EQ(launcher.stop_calls, 1);
+    EXPECT_TRUE(launcher.launched_slugs.empty());
+
+    launcher.fake_running_slug.clear();
+    launcher.simulateEnded(QStringLiteral("alpha"));
+
+    ASSERT_EQ(launcher.launched_slugs.size(), 1u);
+    EXPECT_EQ(launcher.launched_slugs.front(), "beta");
+}
+
+TEST_F(SwitchFixture, a_pending_switch_fires_only_once)
+{
+    FakeLauncher launcher;
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+    launcher.fake_running_slug = QStringLiteral("alpha");
+    launcher.simulateStarted(QStringLiteral("alpha"));
+    window.accept_switch = true;
+    QTest::mouseClick(window.grid()->tileFor("beta"), Qt::LeftButton);
+    launcher.fake_running_slug.clear();
+    launcher.simulateEnded(QStringLiteral("alpha"));
+
+    launcher.simulateEnded(QStringLiteral("beta"));
+
+    EXPECT_EQ(launcher.launched_slugs.size(), 1u);
+}
+
+TEST_F(SwitchFixture, a_game_damaged_during_the_switch_gets_the_offer_not_a_launch)
+{
+    // The files can change between accepting the switch and the running
+    // game's exit, so the pending launch re-checks them.
+    FakeLauncher launcher;
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+    launcher.fake_running_slug = QStringLiteral("alpha");
+    launcher.simulateStarted(QStringLiteral("alpha"));
+    window.accept_switch = true;
+    QTest::mouseClick(window.grid()->tileFor("beta"), Qt::LeftButton);
+
+    writeBetaData(2);
+    launcher.fake_running_slug.clear();
+    launcher.simulateEnded(QStringLiteral("alpha"));
+
+    EXPECT_EQ(window.reinstall_offers, 1);
+    EXPECT_TRUE(launcher.launched_slugs.empty());
+}
+
+// One game whose definition names an expected file, so a test controls
+// whether the install is intact by writing that file.
+class IntegrityFixture : public LaunchFixture {
+protected:
+    void SetUp() override
+    {
+        LaunchFixture::SetUp();
+        const auto games_dir = std::filesystem::path(dir_.path().toStdString()) / "games";
+        writeGame(games_dir,
+                  "gamma",
+                  "Gamma",
+                  1,
+                  "[install.expected_files]\n\"DATA.DAT\" = { size = 4 }\n");
+        std::filesystem::create_directories(cache_ / "installs" / "gamma");
+        one_game_ = GameCatalog::loadFromDirectory(games_dir);
+        ASSERT_EQ(one_game_.size(), 1u);
+    }
+
+    void writeGammaData(std::size_t byte_count)
+    {
+        std::ofstream out(cache_ / "installs" / "gamma" / "DATA.DAT",
+                          std::ios::binary | std::ios::trunc);
+        out << std::string(byte_count, 'x');
+    }
+
+    GameCatalog one_game_;
+};
+
+TEST_F(IntegrityFixture, an_intact_install_launches_without_an_offer)
+{
+    writeGammaData(4);
+    FakeLauncher launcher;
+    ScriptedWindow window(one_game_, assetsDir(), settings(), sizer(), &launcher);
+
+    QTest::mouseClick(window.grid()->tileFor("gamma"), Qt::LeftButton);
+
+    EXPECT_EQ(window.reinstall_offers, 0);
+    ASSERT_EQ(launcher.launched_slugs.size(), 1u);
+    EXPECT_EQ(launcher.launched_slugs.front(), "gamma");
+}
+
+TEST_F(IntegrityFixture, a_damaged_install_offers_reinstall_instead_of_launching)
+{
+    writeGammaData(2);
+    FakeLauncher launcher;
+    ScriptedWindow window(one_game_, assetsDir(), settings(), sizer(), &launcher);
+
+    QTest::mouseClick(window.grid()->tileFor("gamma"), Qt::LeftButton);
+
+    EXPECT_EQ(window.reinstall_offers, 1);
+    EXPECT_EQ(window.named_reinstall_title, QStringLiteral("Gamma"));
+    EXPECT_TRUE(launcher.launched_slugs.empty());
+    // A game that will not launch asks no port question.
+    EXPECT_EQ(window.port_notices, 0);
+}
+
+TEST_F(IntegrityFixture, declining_reinstall_keeps_the_tile_ready)
+{
+    writeGammaData(2);
+    FakeLauncher launcher;
+    ScriptedWindow window(one_game_, assetsDir(), settings(), sizer(), &launcher);
+
+    QTest::mouseClick(window.grid()->tileFor("gamma"), Qt::LeftButton);
+
+    EXPECT_EQ(window.grid()->tileFor("gamma")->state(), TileState::Ready);
+}
+
+TEST_F(IntegrityFixture, accepting_reinstall_without_an_archive_demotes_to_not_downloaded)
+{
+    writeGammaData(2);
+    FakeLauncher launcher;
+    ScriptedWindow window(one_game_, assetsDir(), settings(), sizer(), &launcher);
+    window.accept_reinstall = true;
+
+    QTest::mouseClick(window.grid()->tileFor("gamma"), Qt::LeftButton);
+
+    EXPECT_EQ(window.grid()->tileFor("gamma")->state(), TileState::NotDownloaded);
+}
+
+TEST_F(IntegrityFixture,
+       accepting_reinstall_with_an_archive_on_disk_demotes_to_downloaded)
+{
+    writeGammaData(2);
+    std::filesystem::create_directories(cache_ / "downloads" / "gamma");
+    {
+        std::ofstream out(cache_ / "downloads" / "gamma" / "gamma.zip");
+        out << "zip";
+    }
+    FakeLauncher launcher;
+    ScriptedWindow window(one_game_, assetsDir(), settings(), sizer(), &launcher);
+    window.accept_reinstall = true;
+
+    QTest::mouseClick(window.grid()->tileFor("gamma"), Qt::LeftButton);
+
+    EXPECT_EQ(window.grid()->tileFor("gamma")->state(), TileState::Downloaded);
 }
 
 } // namespace

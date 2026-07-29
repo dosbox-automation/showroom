@@ -185,5 +185,42 @@ TEST_F(GameLauncherFixture, stop_ends_the_running_game)
     EXPECT_FALSE(launcher.isRunning());
 }
 
+TEST_F(GameLauncherFixture, shutdown_and_wait_ends_the_game_before_returning)
+{
+    setenv("FAKE_ENGINE_MODE", "run", 1);
+    GameLauncher launcher(fakeEngine(), base(), deadPort());
+    QSignalSpy started(&launcher, &GameLauncher::gameStarted);
+    std::string error;
+
+    ASSERT_TRUE(launcher.launch(doomGame(), error)) << error;
+    ASSERT_TRUE(started.wait(5000));
+
+    launcher.setStopTimeouts(100, 100);
+    EXPECT_TRUE(launcher.shutdownAndWait());
+    EXPECT_FALSE(launcher.isRunning());
+}
+
+TEST_F(GameLauncherFixture, shutdown_and_wait_with_nothing_running_returns_at_once)
+{
+    GameLauncher launcher(fakeEngine(), base(), deadPort());
+
+    EXPECT_TRUE(launcher.shutdownAndWait());
+}
+
+TEST_F(GameLauncherFixture, destroying_the_launcher_with_a_running_child_is_safe)
+{
+    // The engine member outlives the slug member in reverse destruction
+    // order, so a finished signal emitted while the destructor kills the
+    // child must not reach the launcher's dead members.
+    setenv("FAKE_ENGINE_MODE", "run", 1);
+    {
+        GameLauncher launcher(fakeEngine(), base(), deadPort());
+        QSignalSpy started(&launcher, &GameLauncher::gameStarted);
+        std::string error;
+        ASSERT_TRUE(launcher.launch(doomGame(), error)) << error;
+        ASSERT_TRUE(started.wait(5000));
+    }
+}
+
 } // namespace
 } // namespace showroom

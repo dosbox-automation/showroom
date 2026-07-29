@@ -23,6 +23,11 @@ public:
     int tileWidth() const;
     void setTileWidth(int width_px);
 
+    // Defaults to true; only an explicit stored false suppresses it, so a
+    // corrupt file fails toward showing the notice.
+    bool showPortNotice() const;
+    void setShowPortNotice(bool show);
+
     const std::filesystem::path& file() const { return file_; }
 
 private:

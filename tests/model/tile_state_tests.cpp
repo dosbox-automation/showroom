@@ -43,6 +43,11 @@ const std::set<Transition>& legalTransitions()
 
             {TileState::Ready, TileState::Running},
             {TileState::Running, TileState::Ready},
+
+            // A damaged install rolls back for reinstallation: to the kept
+            // archive when one is on disk, otherwise to the download button.
+            {TileState::Ready, TileState::Downloaded},
+            {TileState::Ready, TileState::NotDownloaded},
     };
     return kTable;
 }
@@ -97,6 +102,17 @@ TEST(TileStateTransitions, running_returns_to_ready_when_the_process_exits)
 
     EXPECT_FALSE(isLegalTransition(TileState::Running, TileState::NotDownloaded));
     EXPECT_FALSE(isLegalTransition(TileState::Running, TileState::Downloaded));
+}
+
+TEST(TileStateTransitions, a_damaged_ready_install_rolls_back_for_reinstall)
+{
+    EXPECT_TRUE(isLegalTransition(TileState::Ready, TileState::Downloaded));
+    EXPECT_TRUE(isLegalTransition(TileState::Ready, TileState::NotDownloaded));
+
+    // Damage never skips stations: a Ready tile does not jump into a
+    // running download or install by itself.
+    EXPECT_FALSE(isLegalTransition(TileState::Ready, TileState::Downloading));
+    EXPECT_FALSE(isLegalTransition(TileState::Ready, TileState::Installing));
 }
 
 TEST(TileStateTransitions, connectivity_moves_only_the_not_downloaded_state)

@@ -31,7 +31,11 @@ bool isLegalTransition(TileState from, TileState to)
     case TileState::Installing:
         return to == TileState::Ready || to == TileState::Downloaded;
 
-    case TileState::Ready: return to == TileState::Running;
+    // A damaged install rolls back for reinstallation: to the kept archive
+    // when one is on disk, otherwise all the way to the download button.
+    case TileState::Ready:
+        return to == TileState::Running || to == TileState::Downloaded
+            || to == TileState::NotDownloaded;
 
     case TileState::Running: return to == TileState::Ready;
 

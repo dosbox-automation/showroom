@@ -6,6 +6,9 @@
 
 #include "engine/conf_writer.h"
 
+#include <QEventLoop>
+#include <QTimer>
+
 #include <system_error>
 #include <utility>
 
@@ -35,7 +38,13 @@ GameLauncher::GameLauncher(std::filesystem::path engine_binary,
     });
 }
 
-GameLauncher::~GameLauncher() = default;
+GameLauncher::~GameLauncher()
+{
+    // The members this object's engine-signal handlers touch are destroyed
+    // before the engine member is; a signal emitted while the engine kills
+    // its child in its own destructor must not reach them.
+    disconnect(&engine_, nullptr, this, nullptr);
+}
 
 bool GameLauncher::launch(const GameDefinition& game, std::string& error)
 {
@@ -76,6 +85,24 @@ bool GameLauncher::launch(const GameDefinition& game, std::string& error)
 void GameLauncher::stop()
 {
     engine_.stop();
+}
+
+bool GameLauncher::shutdownAndWait()
+{
+    if (!engine_.isRunning()) {
+        return true;
+    }
+    // The ceiling exceeds the stop escalation on purpose: stop() already
+    // ends in a kill, so the ceiling only guards the wait itself.
+    QEventLoop loop;
+    QTimer ceiling;
+    ceiling.setSingleShot(true);
+    connect(&engine_, &EngineProcess::finished, &loop, [&loop](int) { loop.quit(); });
+    connect(&ceiling, &QTimer::timeout, &loop, &QEventLoop::quit);
+    ceiling.start(engine_.stopEscalationBudgetMs() + kShutdownMarginMs);
+    engine_.stop();
+    loop.exec();
+    return !engine_.isRunning();
 }
 
 bool GameLauncher::isRunning() const
