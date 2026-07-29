@@ -6,6 +6,7 @@
 #include "app/settings.h"
 #include "app/logging.h"
 #include "engine/game_launcher.h"
+#include "net/downloader.h"
 #include "model/game_catalog.h"
 #include "ui/main_window.h"
 
@@ -63,11 +64,14 @@ int main(int argc, char* argv[])
                            engine_binary.string().c_str());
     }
 
+    showroom::Downloader downloader;
+
     showroom::MainWindow window(catalog,
                                 assets,
                                 showroom::Settings(showroom::Paths::settingsFile()),
                                 showroom::MainWindow::sizerForPrimaryScreen(),
-                                launcher.get());
+                                launcher.get(),
+                                &downloader);
     window.show();
 
     return QApplication::exec();

@@ -49,6 +49,7 @@ TEST(LegendBarPainting, a_state_with_an_action_paints_its_button)
 {
     for (const TileState state : {TileState::NotDownloaded,
                                   TileState::Downloaded,
+                                  TileState::Downloading,
                                   TileState::Ready,
                                   TileState::Running}) {
         LegendBar bar;
@@ -61,10 +62,8 @@ TEST(LegendBarPainting, a_state_with_an_action_paints_its_button)
 
 TEST(LegendBarPainting, a_state_without_an_action_leaves_the_corner_empty)
 {
-    for (const TileState state : {TileState::Downloading,
-                                  TileState::Installing,
-                                  TileState::OfflineNotDownloaded,
-                                  TileState::NoRecipe}) {
+    for (const TileState state :
+         {TileState::Installing, TileState::OfflineNotDownloaded, TileState::NoRecipe}) {
         LegendBar bar;
         bar.setLicenseLabel(QStringLiteral("SHAREWARE"));
         bar.setState(state);

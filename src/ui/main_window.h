@@ -8,6 +8,7 @@
 #include "app/settings.h"
 #include "model/game_catalog.h"
 #include "model/step_sizer.h"
+#include "model/tile_state.h"
 
 #include <QMainWindow>
 
@@ -16,6 +17,7 @@
 
 namespace showroom {
 
+class Downloader;
 class GameLauncher;
 class Sidebar;
 class TileGrid;
@@ -28,11 +30,12 @@ class MainWindow : public QMainWindow {
 public:
     // The sizer is passed in so a test can state a screen; measuring the
     // primary screen here would make every window test depend on the
-    // platform plugin's idea of a display. The launcher is borrowed, not
-    // owned; without one the tiles stay static and touch no cache.
+    // platform plugin's idea of a display. Launcher and downloader are
+    // borrowed, not owned; without them the matching tile actions are
+    // disabled and no cache is touched.
     MainWindow(const GameCatalog& catalog, const std::filesystem::path& assets_dir,
                Settings settings, StepSizer sizer, GameLauncher* launcher = nullptr,
-               QWidget* parent = nullptr);
+               Downloader* downloader = nullptr, QWidget* parent = nullptr);
 
     static StepSizer sizerForPrimaryScreen();
 
@@ -64,6 +67,8 @@ private:
     bool ensureIntactOrOffer(const GameDefinition& game);
     void demoteDamagedTile(const GameDefinition& game);
     bool confirmPortNoticeIfNeeded();
+    void startDownload(const GameDefinition& game);
+    void setDownloadingTileState(TileState state);
 
     // Fixed for the life of the window: dragged to a smaller monitor it
     // keeps its step rather than re-measuring behind the user's back.
@@ -73,6 +78,7 @@ private:
     std::filesystem::path assets_dir_;
 
     GameLauncher* launcher_ = nullptr;
+    Downloader* downloader_ = nullptr;
     Sidebar* sidebar_ = nullptr;
     TileGrid* grid_ = nullptr;
     int tile_width_px_ = 0;
@@ -80,6 +86,10 @@ private:
     // Set when the user accepts a switch; the game launches once the
     // running one has actually exited, never beside it.
     std::string pending_switch_slug_;
+
+    // One transfer at a time; the downloader's signals carry no slug, so
+    // the window remembers whose tile they belong to.
+    std::string downloading_slug_;
 
     // resizeEvent applies a step, which resizes the window, which arrives
     // back here.

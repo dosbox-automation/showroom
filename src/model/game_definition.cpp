@@ -139,6 +139,19 @@ bool isSafePathComponent(std::string_view value)
     return std::all_of(value.begin(), value.end(), isAllowedComponentChar);
 }
 
+std::string sanitizedPathComponent(std::string_view value)
+{
+    std::string out;
+    out.reserve(value.size());
+    for (const char c : value) {
+        out += isAllowedComponentChar(c) ? c : '_';
+    }
+    if (!isSafePathComponent(out)) {
+        return {};
+    }
+    return out;
+}
+
 bool isSafeRelativePath(std::string_view value)
 {
     if (value.empty()) {
@@ -301,6 +314,14 @@ std::optional<GameDefinition> GameDefinition::fromTomlString(std::string_view te
         }
         source.filename = parser.optionalString(entry, "filename");
         source.sha256 = parser.optionalString(entry, "sha256");
+        if (const auto* size = entry.get("size"); size != nullptr) {
+            const auto value = size->value<std::int64_t>();
+            if (!value || *value < 0) {
+                error = "source " + source.role + ": invalid size";
+                return std::nullopt;
+            }
+            source.size = static_cast<std::uint64_t>(*value);
+        }
         game.sources_.push_back(std::move(source));
     }
     if (game.sources_.empty()) {

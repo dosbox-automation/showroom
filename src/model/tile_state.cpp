@@ -61,7 +61,8 @@ TileAction actionFor(TileState state)
 
     case TileState::Running: return TileAction::Stop;
 
-    case TileState::Downloading:
+    case TileState::Downloading: return TileAction::Cancel;
+
     case TileState::Installing:
     case TileState::OfflineNotDownloaded:
     case TileState::NoRecipe: return TileAction::None;

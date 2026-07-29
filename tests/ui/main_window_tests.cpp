@@ -8,6 +8,7 @@
 #include "engine/game_launcher.h"
 #include "model/game_catalog.h"
 #include "model/step_sizer.h"
+#include "net/downloader.h"
 #include "ui/game_tile.h"
 #include "ui/tile_grid.h"
 
@@ -15,6 +16,7 @@
 
 #include <QTemporaryDir>
 #include <QTest>
+#include <QUrl>
 
 #include <algorithm>
 #include <cstdlib>
@@ -229,6 +231,56 @@ public:
     int shutdown_waits = 0;
     bool refuse_launch = false;
     QString fake_running_slug;
+};
+
+// Records what the window asked for; the tests play the signals back.
+class FakeDownloader : public Downloader {
+public:
+    bool start(const QUrl& url, const std::filesystem::path& destination,
+               std::string& error,
+               std::optional<std::uint64_t> expected_size_bytes) override
+    {
+        if (busy) {
+            error = "a transfer is already running";
+            return false;
+        }
+        ++starts;
+        busy = true;
+        last_url = url;
+        last_destination = destination;
+        last_expected_size = expected_size_bytes;
+        return true;
+    }
+
+    void cancel() override { ++cancel_calls; }
+    bool isRunning() const override { return busy; }
+
+    void simulateProgress(qint64 received, qint64 total)
+    {
+        emit progress(received, total);
+    }
+    void simulateFinished(const QString& path)
+    {
+        busy = false;
+        emit finished(path);
+    }
+    void simulateFailed(const QString& reason)
+    {
+        busy = false;
+        emit failed(reason);
+    }
+    void simulateCancelled()
+    {
+        busy = false;
+        emit cancelled();
+    }
+
+    int starts = 0;
+    int cancel_calls = 0;
+    bool busy = false;
+    QUrl last_url;
+    std::filesystem::path last_destination;
+    std::optional<std::uint64_t> last_expected_size;
 };
 
 class LaunchFixture : public WindowFixture {
@@ -639,6 +691,173 @@ protected:
 
     GameCatalog one_game_;
 };
+
+// Two launchable games with no install directory, so their tiles offer
+// the download action.
+class DownloadFixture : public LaunchFixture {
+protected:
+    void SetUp() override
+    {
+        LaunchFixture::SetUp();
+        const auto games_dir = std::filesystem::path(dir_.path().toStdString()) / "games";
+        writeSizedGame(games_dir, "delta", "Delta", 1);
+        writeSizedGame(games_dir, "epsilon", "Epsilon", 2);
+        two_games_ = GameCatalog::loadFromDirectory(games_dir);
+        ASSERT_EQ(two_games_.size(), 2u);
+    }
+
+    static void writeSizedGame(const std::filesystem::path& games_dir,
+                               const std::string& slug, const std::string& title,
+                               int rank)
+    {
+        std::filesystem::create_directories(games_dir / slug);
+        std::ofstream out(games_dir / slug / (slug + ".toml"));
+        out << "slug = \"" << slug << "\"\n"
+            << "title = \"" << title << "\"\n"
+            << "rank = " << rank << "\n"
+            << "license = \"shareware\"\n"
+            << "[sources.primary]\n"
+            << "url = \"https://example.invalid/" << slug << ".zip\"\n"
+            << "size = 1000\n"
+            << "[dosbox]\n"
+            << "machine = \"svga_s3\"\n"
+            << "cpu_cycles = 3000\n"
+            << "cpu_cycles_protected = 3000\n"
+            << "[launch]\n"
+            << "executable = \"GAME.EXE\"\n"
+            << "[install]\n"
+            << "max_runtime_seconds = 60\n";
+    }
+
+    GameCatalog two_games_;
+};
+
+TEST_F(DownloadFixture, download_on_a_not_downloaded_tile_starts_the_transfer)
+{
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader);
+    GameTile* tile = window.grid()->tileFor("delta");
+    ASSERT_EQ(tile->state(), TileState::NotDownloaded);
+
+    QTest::mouseClick(tile, Qt::LeftButton);
+
+    EXPECT_EQ(downloader.starts, 1);
+    EXPECT_EQ(downloader.last_url.toString(),
+              QStringLiteral("https://example.invalid/delta.zip"));
+    EXPECT_EQ(downloader.last_destination.filename().string(), "delta.zip");
+    EXPECT_EQ(downloader.last_destination.parent_path().filename().string(), "delta");
+    EXPECT_EQ(downloader.last_expected_size, 1000u);
+    EXPECT_EQ(tile->state(), TileState::Downloading);
+}
+
+TEST_F(DownloadFixture, progress_fills_the_downloading_tile)
+{
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader);
+    GameTile* tile = window.grid()->tileFor("delta");
+    QTest::mouseClick(tile, Qt::LeftButton);
+
+    downloader.simulateProgress(500, 1000);
+
+    EXPECT_EQ(tile->progress(), 50);
+}
+
+TEST_F(DownloadFixture, a_finished_download_lands_on_downloaded)
+{
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader);
+    GameTile* tile = window.grid()->tileFor("delta");
+    QTest::mouseClick(tile, Qt::LeftButton);
+
+    downloader.simulateFinished(QStringLiteral("delta.zip"));
+
+    EXPECT_EQ(tile->state(), TileState::Downloaded);
+}
+
+TEST_F(DownloadFixture, a_failed_download_returns_to_not_downloaded)
+{
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader);
+    GameTile* tile = window.grid()->tileFor("delta");
+    QTest::mouseClick(tile, Qt::LeftButton);
+
+    downloader.simulateFailed(QStringLiteral("server answered 404"));
+
+    EXPECT_EQ(tile->state(), TileState::NotDownloaded);
+}
+
+TEST_F(DownloadFixture, clicking_the_downloading_tile_cancels)
+{
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader);
+    GameTile* tile = window.grid()->tileFor("delta");
+    QTest::mouseClick(tile, Qt::LeftButton);
+
+    QTest::mouseClick(tile, Qt::LeftButton);
+    EXPECT_EQ(downloader.cancel_calls, 1);
+
+    downloader.simulateCancelled();
+    EXPECT_EQ(tile->state(), TileState::NotDownloaded);
+}
+
+TEST_F(DownloadFixture, a_second_download_while_one_runs_is_not_started)
+{
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader);
+    QTest::mouseClick(window.grid()->tileFor("delta"), Qt::LeftButton);
+
+    QTest::mouseClick(window.grid()->tileFor("epsilon"), Qt::LeftButton);
+
+    EXPECT_EQ(downloader.starts, 1);
+    EXPECT_EQ(window.grid()->tileFor("epsilon")->state(), TileState::NotDownloaded);
+}
+
+TEST_F(DownloadFixture, without_a_downloader_the_tile_ignores_the_click)
+{
+    FakeLauncher launcher;
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+    GameTile* tile = window.grid()->tileFor("delta");
+
+    QTest::mouseClick(tile, Qt::LeftButton);
+
+    EXPECT_EQ(tile->state(), TileState::NotDownloaded);
+}
 
 TEST_F(IntegrityFixture, an_intact_install_launches_without_an_offer)
 {

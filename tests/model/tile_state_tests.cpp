@@ -150,8 +150,9 @@ TEST(TileStateActions, each_state_offers_the_button_the_design_specifies)
     EXPECT_EQ(actionFor(TileState::Ready), TileAction::Play);
     EXPECT_EQ(actionFor(TileState::Running), TileAction::Stop);
 
-    // Work in progress and the two dead ends offer nothing to click.
-    EXPECT_EQ(actionFor(TileState::Downloading), TileAction::None);
+    // A transfer can be walked away from; an install cannot, it would
+    // leave a half-written game directory.
+    EXPECT_EQ(actionFor(TileState::Downloading), TileAction::Cancel);
     EXPECT_EQ(actionFor(TileState::Installing), TileAction::None);
     EXPECT_EQ(actionFor(TileState::OfflineNotDownloaded), TileAction::None);
     EXPECT_EQ(actionFor(TileState::NoRecipe), TileAction::None);

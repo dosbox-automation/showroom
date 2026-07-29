@@ -9,6 +9,8 @@
 #include "engine/game_launcher.h"
 #include "model/install_check.h"
 #include "model/tile_state.h"
+#include "net/download_plan.h"
+#include "net/downloader.h"
 #include "ui/about_dialog.h"
 #include "ui/game_tile.h"
 #include "ui/sidebar.h"
@@ -24,6 +26,7 @@
 #include <QScreen>
 #include <QShortcut>
 
+#include <algorithm>
 #include <utility>
 
 namespace showroom {
@@ -47,13 +50,15 @@ StepSizer MainWindow::sizerForPrimaryScreen()
 
 MainWindow::MainWindow(const GameCatalog& catalog,
                        const std::filesystem::path& assets_dir, Settings settings,
-                       StepSizer sizer, GameLauncher* launcher, QWidget* parent)
+                       StepSizer sizer, GameLauncher* launcher, Downloader* downloader,
+                       QWidget* parent)
         : QMainWindow(parent),
           sizer_(std::move(sizer)),
           settings_(std::move(settings)),
           catalog_(catalog),
           assets_dir_(assets_dir),
-          launcher_(launcher)
+          launcher_(launcher),
+          downloader_(downloader)
 {
     setWindowTitle(QStringLiteral("dosbox-automation showroom"));
     setAutoFillBackground(true);
@@ -95,7 +100,6 @@ MainWindow::MainWindow(const GameCatalog& catalog,
             }
         }
 
-        connect(grid_, &TileGrid::actionTriggered, this, &MainWindow::onTileAction);
         connect(launcher_, &GameLauncher::gameStarted, this, [this](const QString& slug) {
             if (GameTile* tile = grid_->tileFor(slug)) {
                 tile->setState(TileState::Running);
@@ -114,6 +118,37 @@ MainWindow::MainWindow(const GameCatalog& catalog,
                         tile->setState(TileState::Ready);
                     }
                 });
+    }
+
+    connect(grid_, &TileGrid::actionTriggered, this, &MainWindow::onTileAction);
+
+    if (downloader_ != nullptr) {
+        connect(downloader_,
+                &Downloader::progress,
+                this,
+                [this](qint64 received, qint64 total) {
+                    if (total <= 0) {
+                        return;
+                    }
+                    if (GameTile* tile = grid_->tileFor(
+                                QString::fromStdString(downloading_slug_))) {
+                        tile->setProgress(static_cast<int>(
+                                std::clamp<qint64>(received * 100 / total, 0, 100)));
+                    }
+                });
+        connect(downloader_, &Downloader::finished, this, [this](const QString&) {
+            setDownloadingTileState(TileState::Downloaded);
+        });
+        connect(downloader_, &Downloader::failed, this, [this](const QString& reason) {
+            log_error(kLogComponent,
+                      "download of %s failed: %s",
+                      downloading_slug_.c_str(),
+                      reason.toStdString().c_str());
+            setDownloadingTileState(TileState::NotDownloaded);
+        });
+        connect(downloader_, &Downloader::cancelled, this, [this]() {
+            setDownloadingTileState(TileState::NotDownloaded);
+        });
     }
 
     setCentralWidget(central);
@@ -216,9 +251,6 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
 void MainWindow::onTileAction(const QString& slug)
 {
-    if (launcher_ == nullptr) {
-        return;
-    }
     GameTile* tile = grid_->tileFor(slug);
     const GameDefinition* game = catalog_.find(slug.toStdString());
     if (tile == nullptr || game == nullptr) {
@@ -226,6 +258,9 @@ void MainWindow::onTileAction(const QString& slug)
     }
     switch (actionFor(tile->state())) {
     case TileAction::Play: {
+        if (launcher_ == nullptr) {
+            break;
+        }
         if (!ensureIntactOrOffer(*game)) {
             break;
         }
@@ -249,9 +284,58 @@ void MainWindow::onTileAction(const QString& slug)
         launchGame(*game);
         break;
     }
-    case TileAction::Stop: launcher_->stop(); break;
+    case TileAction::Stop:
+        if (launcher_ != nullptr) {
+            launcher_->stop();
+        }
+        break;
+    case TileAction::Download: startDownload(*game); break;
+    case TileAction::Cancel:
+        if (downloader_ != nullptr) {
+            downloader_->cancel();
+        }
+        break;
     default: break;
     }
+}
+
+void MainWindow::startDownload(const GameDefinition& game)
+{
+    if (downloader_ == nullptr || downloader_->isRunning()) {
+        return;
+    }
+    const auto plan = downloadPlanFor(game);
+    const auto download_dir = Paths::downloadDirFor(game.slug());
+    if (!plan || !download_dir) {
+        log_error(kLogComponent, "%s has no usable download source", game.slug().c_str());
+        return;
+    }
+
+    std::string error;
+    if (!downloader_->start(QUrl(QString::fromStdString(plan->url)),
+                            *download_dir / plan->filename,
+                            error,
+                            plan->size)) {
+        log_error(kLogComponent,
+                  "cannot download %s: %s",
+                  game.slug().c_str(),
+                  error.c_str());
+        return;
+    }
+
+    downloading_slug_ = game.slug();
+    if (GameTile* tile = grid_->tileFor(QString::fromStdString(game.slug()))) {
+        tile->setState(TileState::Downloading);
+        tile->setProgress(0);
+    }
+}
+
+void MainWindow::setDownloadingTileState(TileState state)
+{
+    if (GameTile* tile = grid_->tileFor(QString::fromStdString(downloading_slug_))) {
+        tile->setState(state);
+    }
+    downloading_slug_.clear();
 }
 
 void MainWindow::onGameEnded(const QString& slug)

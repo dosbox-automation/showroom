@@ -56,6 +56,18 @@ void drawStopSquare(QPainter& painter, const QRectF& box, const QColor& color)
     painter.fillPath(path, color);
 }
 
+void drawCancelCross(QPainter& painter, const QRectF& box, const QColor& color)
+{
+    QPen pen(color);
+    pen.setWidthF(1.8);
+    pen.setCapStyle(Qt::RoundCap);
+    painter.setPen(pen);
+
+    const QRectF inner = box.adjusted(2, 2, -2, -2);
+    painter.drawLine(inner.topLeft(), inner.bottomRight());
+    painter.drawLine(inner.topRight(), inner.bottomLeft());
+}
+
 } // namespace
 
 LegendBar::LegendBar(QWidget* parent) : QWidget(parent)
@@ -180,7 +192,8 @@ void LegendBar::paintEvent(QPaintEvent* /*event*/)
     QColor action_color = theme::kMutedText;
     switch (actionFor(state_)) {
     case TileAction::Play: action_color = theme::kGreen; break;
-    case TileAction::Stop: action_color = theme::kRed; break;
+    case TileAction::Stop:
+    case TileAction::Cancel: action_color = theme::kRed; break;
     case TileAction::Download:
     case TileAction::None: break;
     }
@@ -195,6 +208,7 @@ void LegendBar::paintEvent(QPaintEvent* /*event*/)
         break;
     case TileAction::Download: drawDownloadArrow(painter, box, action_color); break;
     case TileAction::Stop: drawStopSquare(painter, box, action_color); break;
+    case TileAction::Cancel: drawCancelCross(painter, box, action_color); break;
     case TileAction::None: break;
     }
 }

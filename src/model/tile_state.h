@@ -32,7 +32,7 @@ inline constexpr std::array<TileState, 8> kAllTileStates = {
         TileState::OfflineNotDownloaded,
         TileState::NoRecipe};
 
-enum class TileAction { None, Download, Play, Stop };
+enum class TileAction { None, Download, Play, Stop, Cancel };
 
 // The concrete colours live in the widget; choosing between them does
 // not, so the choice is testable without a screen.

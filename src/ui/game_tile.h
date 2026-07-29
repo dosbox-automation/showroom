@@ -34,6 +34,7 @@ public:
     void setProgress(int percent);
 
     TileState state() const { return state_; }
+    int progress() const { return progress_percent_; }
     const QString& slug() const { return slug_; }
 
     void setTileWidth(int width_px);

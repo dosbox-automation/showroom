@@ -127,6 +127,34 @@ TEST(GameDefinition, parses_a_minimal_definition)
     EXPECT_EQ(game->sources().size(), 1u);
 }
 
+TEST(GameDefinition, reads_an_optional_source_size)
+{
+    std::string error;
+    const auto game = GameDefinition::fromTomlString(
+            withReplacement("url = \"https://example.org/doom.7z\"",
+                            "url = \"https://example.org/doom.7z\"\nsize = 2500000"),
+            error);
+
+    ASSERT_TRUE(game.has_value()) << error;
+    EXPECT_EQ(game->sources()[0].size, 2500000u);
+
+    const auto without = GameDefinition::fromTomlString(minimalToml(), error);
+    ASSERT_TRUE(without.has_value()) << error;
+    EXPECT_FALSE(without->sources()[0].size.has_value());
+}
+
+TEST(GameDefinition, rejects_a_negative_source_size)
+{
+    std::string error;
+    const auto game = GameDefinition::fromTomlString(
+            withReplacement("url = \"https://example.org/doom.7z\"",
+                            "url = \"https://example.org/doom.7z\"\nsize = -5"),
+            error);
+
+    EXPECT_FALSE(game.has_value());
+    EXPECT_NE(error.find("size"), std::string::npos);
+}
+
 TEST(GameDefinition, accepts_a_definition_without_expected_files)
 {
     std::string error;

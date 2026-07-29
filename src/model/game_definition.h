@@ -28,6 +28,8 @@ struct GameSource {
     std::string url;
     std::optional<std::string> filename;
     std::optional<std::string> sha256;
+    // Archive size in bytes, for the pre-download free-space check.
+    std::optional<std::uint64_t> size;
 };
 
 struct DosboxSound {
@@ -117,6 +119,10 @@ bool isSafeSlug(std::string_view value);
 // Safe to append to a path: rejects empty, absolute, traversal,
 // separators and anything outside a conservative character set.
 bool isSafePathComponent(std::string_view value);
+
+// Forces a name into that character set (underscores for the rest);
+// empty when nothing safe remains.
+std::string sanitizedPathComponent(std::string_view value);
 
 // Same for a multi-segment path such as "GOLD/DOOM"; empty means the
 // install root itself.
