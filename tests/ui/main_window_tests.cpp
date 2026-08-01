@@ -964,8 +964,7 @@ TEST_F(ConnectivityFixture, offline_at_startup_sets_not_downloaded_tiles_to_offl
                           &downloader,
                           &connectivity);
 
-    EXPECT_EQ(window.grid()->tileFor("delta")->state(),
-              TileState::OfflineNotDownloaded);
+    EXPECT_EQ(window.grid()->tileFor("delta")->state(), TileState::OfflineNotDownloaded);
     EXPECT_EQ(window.grid()->tileFor("epsilon")->state(),
               TileState::OfflineNotDownloaded);
 }
@@ -987,8 +986,7 @@ TEST_F(ConnectivityFixture, going_offline_demotes_not_downloaded_tiles)
 
     connectivity.setOnline(false);
 
-    EXPECT_EQ(window.grid()->tileFor("delta")->state(),
-              TileState::OfflineNotDownloaded);
+    EXPECT_EQ(window.grid()->tileFor("delta")->state(), TileState::OfflineNotDownloaded);
     EXPECT_EQ(window.grid()->tileFor("epsilon")->state(),
               TileState::OfflineNotDownloaded);
 }
@@ -1008,8 +1006,7 @@ TEST_F(ConnectivityFixture, coming_back_online_restores_not_downloaded_tiles)
                           &connectivity);
 
     connectivity.setOnline(false);
-    ASSERT_EQ(window.grid()->tileFor("delta")->state(),
-              TileState::OfflineNotDownloaded);
+    ASSERT_EQ(window.grid()->tileFor("delta")->state(), TileState::OfflineNotDownloaded);
 
     connectivity.setOnline(true);
 
@@ -1088,8 +1085,7 @@ TEST_F(ConnectivityFixture, a_failed_download_while_offline_lands_on_offline_sta
     connectivity.setOnline(false);
     downloader.simulateFailed("connection lost");
 
-    EXPECT_EQ(window.grid()->tileFor("delta")->state(),
-              TileState::OfflineNotDownloaded);
+    EXPECT_EQ(window.grid()->tileFor("delta")->state(), TileState::OfflineNotDownloaded);
 }
 
 } // namespace

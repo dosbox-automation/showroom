@@ -248,7 +248,8 @@ void GameTile::paintEvent(QPaintEvent* /*event*/)
         if (is_hover_hint) {
             painter.setPen(theme::kBrightText);
         } else {
-            painter.setPen(showsProgress(state_) ? theme::kBrightText : theme::kMutedText);
+            painter.setPen(showsProgress(state_) ? theme::kBrightText
+                                                 : theme::kMutedText);
         }
 
         painter.drawText(text_area, Qt::AlignCenter | Qt::TextWordWrap, message);

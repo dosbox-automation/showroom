@@ -155,8 +155,10 @@ MainWindow::MainWindow(const GameCatalog& catalog,
 
     if (connectivity_ != nullptr) {
         applyOnlineState(connectivity_->isOnline());
-        connect(connectivity_, &Connectivity::onlineChanged,
-                this, &MainWindow::applyOnlineState);
+        connect(connectivity_,
+                &Connectivity::onlineChanged,
+                this,
+                &MainWindow::applyOnlineState);
     }
 
     setCentralWidget(central);
@@ -359,8 +361,8 @@ void MainWindow::startDownload(const GameDefinition& game)
 
 void MainWindow::setDownloadingTileState(TileState state)
 {
-    if (state == TileState::NotDownloaded
-        && connectivity_ != nullptr && !connectivity_->isOnline()) {
+    if (state == TileState::NotDownloaded && connectivity_ != nullptr
+        && !connectivity_->isOnline()) {
         state = TileState::OfflineNotDownloaded;
     }
     if (GameTile* tile = grid_->tileFor(QString::fromStdString(downloading_slug_))) {

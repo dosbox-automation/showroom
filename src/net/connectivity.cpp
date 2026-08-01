@@ -21,8 +21,7 @@ bool reachabilityMeansOnline(QNetworkInformation::Reachability r)
 
 } // namespace
 
-Connectivity::Connectivity(QObject* parent)
-        : QObject(parent)
+Connectivity::Connectivity(QObject* parent) : QObject(parent)
 {
     backend_loaded_ = QNetworkInformation::loadDefaultBackend();
     if (!backend_loaded_) {

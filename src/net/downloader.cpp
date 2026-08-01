@@ -86,10 +86,10 @@ bool Downloader::start(const QUrl& url, const std::filesystem::path& destination
              "starting download: %s -> %s%s",
              url.toString().toUtf8().constData(),
              destination_.string().c_str(),
-             resume_from_ > 0
-                     ? (std::string(" (resuming from ") + std::to_string(resume_from_) + ")")
-                               .c_str()
-                     : "");
+             resume_from_ > 0 ? (std::string(" (resuming from ")
+                                 + std::to_string(resume_from_) + ")")
+                                        .c_str()
+                              : "");
 
     reply_ = network_.get(request);
     connect(reply_, &QNetworkReply::readyRead, this, &Downloader::onReadyRead);
