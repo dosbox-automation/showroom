@@ -7,6 +7,7 @@
 #include "app/logging.h"
 #include "app/paths.h"
 #include "engine/game_launcher.h"
+#include "engine/install_runner.h"
 #include "model/install_check.h"
 #include "model/tile_state.h"
 #include "net/download_plan.h"
@@ -35,6 +36,15 @@ namespace {
 
 constexpr const char* kLogComponent = "main_window";
 
+bool archiveOnDisk(const std::string& slug)
+{
+    std::error_code ec;
+    const auto downloads = Paths::downloadDirFor(slug);
+    return downloads.has_value() && std::filesystem::is_directory(*downloads, ec)
+        && std::filesystem::directory_iterator(*downloads, ec)
+                   != std::filesystem::directory_iterator();
+}
+
 } // namespace
 
 StepSizer MainWindow::sizerForPrimaryScreen()
@@ -52,7 +62,8 @@ StepSizer MainWindow::sizerForPrimaryScreen()
 MainWindow::MainWindow(const GameCatalog& catalog,
                        const std::filesystem::path& assets_dir, Settings settings,
                        StepSizer sizer, GameLauncher* launcher, Downloader* downloader,
-                       Connectivity* connectivity, QWidget* parent)
+                       Connectivity* connectivity, InstallRunner* install_runner,
+                       QWidget* parent)
         : QMainWindow(parent),
           sizer_(std::move(sizer)),
           settings_(std::move(settings)),
@@ -60,7 +71,8 @@ MainWindow::MainWindow(const GameCatalog& catalog,
           assets_dir_(assets_dir),
           launcher_(launcher),
           downloader_(downloader),
-          connectivity_(connectivity)
+          connectivity_(connectivity),
+          install_runner_(install_runner)
 {
     setWindowTitle(QStringLiteral("dosbox-automation showroom"));
     setAutoFillBackground(true);
@@ -98,6 +110,13 @@ MainWindow::MainWindow(const GameCatalog& catalog,
                 if (GameTile* tile = grid_->tileFor(
                             QString::fromStdString(game.slug()))) {
                     tile->setState(TileState::Ready);
+                }
+            } else if (archiveOnDisk(game.slug())) {
+                // A downloaded archive survives a restart; the tile
+                // resumes at the station whose artifact is on disk.
+                if (GameTile* tile = grid_->tileFor(
+                            QString::fromStdString(game.slug()))) {
+                    tile->setState(TileState::Downloaded);
                 }
             }
         }
@@ -151,6 +170,44 @@ MainWindow::MainWindow(const GameCatalog& catalog,
         connect(downloader_, &Downloader::cancelled, this, [this]() {
             setDownloadingTileState(TileState::NotDownloaded);
         });
+    }
+
+    if (install_runner_ != nullptr) {
+        connect(install_runner_,
+                &InstallRunner::progressChanged,
+                this,
+                [this](const QString& slug, int percent) {
+                    if (GameTile* tile = grid_->tileFor(slug)) {
+                        tile->setProgress(percent);
+                    }
+                });
+        connect(install_runner_,
+                &InstallRunner::succeeded,
+                this,
+                [this](const QString& slug) {
+                    if (GameTile* tile = grid_->tileFor(slug)) {
+                        tile->setState(TileState::Ready);
+                    }
+                    // Install & play is one intent: the freshly verified
+                    // install launches without a second click.
+                    const GameDefinition* game = catalog_.find(slug.toStdString());
+                    if (game != nullptr && launcher_ != nullptr
+                        && !launcher_->isRunning()) {
+                        launchGame(*game);
+                    }
+                });
+        connect(install_runner_,
+                &InstallRunner::failed,
+                this,
+                [this](const QString& slug, const QString& reason) {
+                    log_error(kLogComponent,
+                              "install of %s failed: %s",
+                              slug.toStdString().c_str(),
+                              reason.toStdString().c_str());
+                    if (GameTile* tile = grid_->tileFor(slug)) {
+                        tile->setState(TileState::Downloaded);
+                    }
+                });
     }
 
     if (connectivity_ != nullptr) {
@@ -268,7 +325,21 @@ void MainWindow::onTileAction(const QString& slug)
     }
     switch (actionFor(tile->state())) {
     case TileAction::Play: {
+        // Downloaded shows Play too, but that click means install first
+        // (the hover hint says "Install & play").
+        if (tile->state() == TileState::Downloaded) {
+            startInstall(*game);
+            break;
+        }
         if (launcher_ == nullptr) {
+            break;
+        }
+        if (install_runner_ != nullptr && install_runner_->isRunning()) {
+            // The engine port is shared; a launch beside an install
+            // would collide on it.
+            log_warn(kLogComponent,
+                     "launch of %s refused: an install is running",
+                     game->slug().c_str());
             break;
         }
         if (!ensureIntactOrOffer(*game)) {
@@ -359,6 +430,50 @@ void MainWindow::startDownload(const GameDefinition& game)
     }
 }
 
+void MainWindow::startInstall(const GameDefinition& game)
+{
+    if (install_runner_ == nullptr) {
+        return;
+    }
+    if (install_runner_->isRunning()) {
+        log_warn(kLogComponent,
+                 "install of %s refused: %s is still installing",
+                 game.slug().c_str(),
+                 install_runner_->installingSlug().toStdString().c_str());
+        return;
+    }
+    // The install boots the same engine the notice is about.
+    if (!confirmPortNoticeIfNeeded()) {
+        return;
+    }
+    if (launcher_ != nullptr && launcher_->isRunning()) {
+        const GameDefinition* running = catalog_.find(
+                launcher_->runningSlug().toStdString());
+        const QString running_title = running != nullptr
+                                            ? QString::fromStdString(running->title())
+                                            : launcher_->runningSlug();
+        if (!confirmGameSwitch(running_title, QString::fromStdString(game.title()))) {
+            return;
+        }
+        pending_install_slug_ = game.slug();
+        launcher_->stop();
+        return;
+    }
+
+    std::string error;
+    if (!install_runner_->startInstall(game, error)) {
+        log_error(kLogComponent,
+                  "cannot install %s: %s",
+                  game.slug().c_str(),
+                  error.c_str());
+        return;
+    }
+    if (GameTile* tile = grid_->tileFor(QString::fromStdString(game.slug()))) {
+        tile->setState(TileState::Installing);
+        tile->setProgress(0);
+    }
+}
+
 void MainWindow::setDownloadingTileState(TileState state)
 {
     if (state == TileState::NotDownloaded && connectivity_ != nullptr
@@ -375,6 +490,14 @@ void MainWindow::onGameEnded(const QString& slug)
 {
     if (GameTile* tile = grid_->tileFor(slug)) {
         tile->setState(TileState::Ready);
+    }
+    if (!pending_install_slug_.empty()) {
+        const GameDefinition* pending = catalog_.find(pending_install_slug_);
+        pending_install_slug_.clear();
+        if (pending != nullptr) {
+            startInstall(*pending);
+        }
+        return;
     }
     if (pending_switch_slug_.empty()) {
         return;
@@ -435,13 +558,8 @@ void MainWindow::demoteDamagedTile(const GameDefinition& game)
     }
     // Reinstallation rides the normal download/install road, so the tile
     // goes back to the station whose artifact is still on disk.
-    std::error_code ec;
-    const auto downloads = Paths::downloadDirFor(game.slug());
-    const bool archive_present = downloads.has_value()
-                              && std::filesystem::is_directory(*downloads, ec)
-                              && std::filesystem::directory_iterator(*downloads, ec)
-                                         != std::filesystem::directory_iterator();
-    tile->setState(archive_present ? TileState::Downloaded : TileState::NotDownloaded);
+    tile->setState(archiveOnDisk(game.slug()) ? TileState::Downloaded
+                                              : TileState::NotDownloaded);
 }
 
 void MainWindow::launchGame(const GameDefinition& game)

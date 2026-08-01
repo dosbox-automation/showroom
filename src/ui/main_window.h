@@ -20,6 +20,7 @@ namespace showroom {
 class Connectivity;
 class Downloader;
 class GameLauncher;
+class InstallRunner;
 class Sidebar;
 class TileGrid;
 
@@ -37,7 +38,7 @@ public:
     MainWindow(const GameCatalog& catalog, const std::filesystem::path& assets_dir,
                Settings settings, StepSizer sizer, GameLauncher* launcher = nullptr,
                Downloader* downloader = nullptr, Connectivity* connectivity = nullptr,
-               QWidget* parent = nullptr);
+               InstallRunner* install_runner = nullptr, QWidget* parent = nullptr);
 
     static StepSizer sizerForPrimaryScreen();
 
@@ -70,6 +71,7 @@ private:
     void demoteDamagedTile(const GameDefinition& game);
     bool confirmPortNoticeIfNeeded();
     void startDownload(const GameDefinition& game);
+    void startInstall(const GameDefinition& game);
     void setDownloadingTileState(TileState state);
     void applyOnlineState(bool online);
 
@@ -83,6 +85,7 @@ private:
     GameLauncher* launcher_ = nullptr;
     Downloader* downloader_ = nullptr;
     Connectivity* connectivity_ = nullptr;
+    InstallRunner* install_runner_ = nullptr;
     Sidebar* sidebar_ = nullptr;
     TileGrid* grid_ = nullptr;
     int tile_width_px_ = 0;
@@ -90,6 +93,10 @@ private:
     // Set when the user accepts a switch; the game launches once the
     // running one has actually exited, never beside it.
     std::string pending_switch_slug_;
+
+    // Same move for an install accepted while a game runs: the engine
+    // port is shared, so the install starts only after the exit.
+    std::string pending_install_slug_;
 
     // One transfer at a time; the downloader's signals carry no slug, so
     // the window remembers whose tile they belong to.

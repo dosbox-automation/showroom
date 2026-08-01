@@ -6,6 +6,8 @@
 #include "app/settings.h"
 #include "app/logging.h"
 #include "engine/game_launcher.h"
+#include "engine/install_runner.h"
+#include "net/archive_extractor.h"
 #include "net/connectivity.h"
 #include "net/downloader.h"
 #include "model/game_catalog.h"
@@ -53,11 +55,19 @@ int main(int argc, char* argv[])
     // Without an engine the grid still shows; the tiles just have nothing
     // to offer, which beats refusing to start over a packaging problem.
     const std::filesystem::path engine_binary = showroom::Paths::engineBinary();
+    // Declared before the runner that borrows it, so it outlives it.
+    showroom::ArchiveExtractor extractor;
     std::unique_ptr<showroom::GameLauncher> launcher;
+    std::unique_ptr<showroom::InstallRunner> install_runner;
     std::error_code probe_error;
     if (std::filesystem::is_regular_file(engine_binary, probe_error)) {
         launcher = std::make_unique<showroom::GameLauncher>(engine_binary,
                                                             showroom::Paths::cacheDir());
+        install_runner =
+                std::make_unique<showroom::InstallRunner>(engine_binary,
+                                                          showroom::Paths::cacheDir(),
+                                                          showroom::Paths::gamesDir(),
+                                                          extractor);
         showroom::log_info("showroom", "engine: %s", engine_binary.string().c_str());
     } else {
         showroom::log_warn("showroom",
@@ -74,7 +84,8 @@ int main(int argc, char* argv[])
                                 showroom::MainWindow::sizerForPrimaryScreen(),
                                 launcher.get(),
                                 &downloader,
-                                &connectivity);
+                                &connectivity,
+                                install_runner.get());
     window.show();
 
     return QApplication::exec();

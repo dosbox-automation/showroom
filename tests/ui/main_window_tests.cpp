@@ -6,6 +6,7 @@
 
 #include "app/settings.h"
 #include "engine/game_launcher.h"
+#include "engine/install_runner.h"
 #include "model/game_catalog.h"
 #include "model/step_sizer.h"
 #include "net/connectivity.h"
@@ -1086,6 +1087,247 @@ TEST_F(ConnectivityFixture, a_failed_download_while_offline_lands_on_offline_sta
     downloader.simulateFailed("connection lost");
 
     EXPECT_EQ(window.grid()->tileFor("delta")->state(), TileState::OfflineNotDownloaded);
+}
+
+// Records what the window asked for; the tests play the signals back.
+class FakeInstallRunner : public InstallRunner {
+public:
+    FakeInstallRunner()
+            : InstallRunner("/nonexistent/engine", "/nonexistent/cache",
+                            "/nonexistent/games", dummyExtractor())
+    {}
+
+    bool startInstall(const GameDefinition& game, std::string& error) override
+    {
+        if (refuse_install) {
+            error = "refused by the fake";
+            return false;
+        }
+        started_slugs.push_back(game.slug());
+        fake_running_slug = QString::fromStdString(game.slug());
+        return true;
+    }
+
+    bool isRunning() const override { return !fake_running_slug.isEmpty(); }
+    QString installingSlug() const override { return fake_running_slug; }
+
+    void simulateProgress(const QString& slug, int percent)
+    {
+        emit progressChanged(slug, percent);
+    }
+    void simulateSucceeded(const QString& slug)
+    {
+        fake_running_slug.clear();
+        emit succeeded(slug);
+    }
+    void simulateFailed(const QString& slug, const QString& reason)
+    {
+        fake_running_slug.clear();
+        emit failed(slug, reason);
+    }
+
+    std::vector<std::string> started_slugs;
+    bool refuse_install = false;
+    QString fake_running_slug;
+
+private:
+    static const ArchiveExtractor& dummyExtractor()
+    {
+        static const ArchiveExtractor kExtractor;
+        return kExtractor;
+    }
+};
+
+// Like SwitchFixture, but alpha starts from the archive station: a
+// downloaded file on disk and no install directory.
+class InstallFixture : public SwitchFixture {
+protected:
+    void SetUp() override
+    {
+        SwitchFixture::SetUp();
+        std::filesystem::remove_all(cache_ / "installs" / "alpha");
+        std::filesystem::create_directories(cache_ / "downloads" / "alpha");
+        std::ofstream(cache_ / "downloads" / "alpha" / "alpha.zip") << "archive";
+    }
+};
+
+TEST_F(InstallFixture, a_downloaded_archive_boots_the_tile_at_downloaded)
+{
+    FakeLauncher launcher;
+    ScriptedWindow window(two_games_, assetsDir(), settings(), sizer(), &launcher);
+
+    EXPECT_EQ(window.grid()->tileFor("alpha")->state(), TileState::Downloaded);
+    EXPECT_EQ(window.grid()->tileFor("beta")->state(), TileState::Ready);
+}
+
+TEST_F(InstallFixture, clicking_a_downloaded_tile_starts_the_install)
+{
+    FakeLauncher launcher;
+    FakeInstallRunner runner;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          nullptr,
+                          nullptr,
+                          &runner);
+    GameTile* tile = window.grid()->tileFor("alpha");
+
+    QTest::mouseClick(tile, Qt::LeftButton);
+
+    EXPECT_EQ(runner.started_slugs, std::vector<std::string>{"alpha"});
+    EXPECT_EQ(tile->state(), TileState::Installing);
+    EXPECT_TRUE(launcher.launched_slugs.empty());
+}
+
+TEST_F(InstallFixture, install_progress_reaches_the_tile)
+{
+    FakeLauncher launcher;
+    FakeInstallRunner runner;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          nullptr,
+                          nullptr,
+                          &runner);
+    GameTile* tile = window.grid()->tileFor("alpha");
+
+    QTest::mouseClick(tile, Qt::LeftButton);
+    runner.simulateProgress("alpha", 50);
+
+    EXPECT_EQ(tile->progress(), 50);
+}
+
+TEST_F(InstallFixture, a_successful_install_turns_ready_and_launches)
+{
+    FakeLauncher launcher;
+    FakeInstallRunner runner;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          nullptr,
+                          nullptr,
+                          &runner);
+    GameTile* tile = window.grid()->tileFor("alpha");
+
+    QTest::mouseClick(tile, Qt::LeftButton);
+    runner.simulateSucceeded("alpha");
+
+    EXPECT_EQ(tile->state(), TileState::Ready);
+    EXPECT_EQ(launcher.launched_slugs, std::vector<std::string>{"alpha"});
+}
+
+TEST_F(InstallFixture, a_failed_install_returns_the_tile_to_downloaded)
+{
+    FakeLauncher launcher;
+    FakeInstallRunner runner;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          nullptr,
+                          nullptr,
+                          &runner);
+    GameTile* tile = window.grid()->tileFor("alpha");
+
+    QTest::mouseClick(tile, Qt::LeftButton);
+    runner.simulateFailed("alpha", "verification failed");
+
+    EXPECT_EQ(tile->state(), TileState::Downloaded);
+    EXPECT_TRUE(launcher.launched_slugs.empty());
+}
+
+TEST_F(InstallFixture, a_refused_install_leaves_the_tile_downloaded)
+{
+    FakeLauncher launcher;
+    FakeInstallRunner runner;
+    runner.refuse_install = true;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          nullptr,
+                          nullptr,
+                          &runner);
+    GameTile* tile = window.grid()->tileFor("alpha");
+
+    QTest::mouseClick(tile, Qt::LeftButton);
+
+    EXPECT_EQ(tile->state(), TileState::Downloaded);
+}
+
+TEST_F(InstallFixture, no_launch_starts_beside_a_running_install)
+{
+    FakeLauncher launcher;
+    FakeInstallRunner runner;
+    runner.fake_running_slug = QStringLiteral("alpha");
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          nullptr,
+                          nullptr,
+                          &runner);
+
+    QTest::mouseClick(window.grid()->tileFor("beta"), Qt::LeftButton);
+
+    EXPECT_TRUE(launcher.launched_slugs.empty());
+}
+
+TEST_F(InstallFixture, the_port_notice_gates_the_install_too)
+{
+    FakeLauncher launcher;
+    FakeInstallRunner runner;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          nullptr,
+                          nullptr,
+                          &runner);
+    window.accept_port_notice = false;
+
+    QTest::mouseClick(window.grid()->tileFor("alpha"), Qt::LeftButton);
+
+    EXPECT_EQ(window.port_notices, 1);
+    EXPECT_TRUE(runner.started_slugs.empty());
+    EXPECT_EQ(window.grid()->tileFor("alpha")->state(), TileState::Downloaded);
+}
+
+TEST_F(InstallFixture, an_install_clicked_beside_a_running_game_waits_for_its_exit)
+{
+    FakeLauncher launcher;
+    FakeInstallRunner runner;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          nullptr,
+                          nullptr,
+                          &runner);
+    window.accept_switch = true;
+    launcher.fake_running_slug = QStringLiteral("beta");
+    launcher.simulateStarted(QStringLiteral("beta"));
+
+    QTest::mouseClick(window.grid()->tileFor("alpha"), Qt::LeftButton);
+    EXPECT_EQ(launcher.stop_calls, 1);
+    EXPECT_TRUE(runner.started_slugs.empty());
+
+    launcher.fake_running_slug.clear();
+    launcher.simulateEnded(QStringLiteral("beta"));
+
+    EXPECT_EQ(runner.started_slugs, std::vector<std::string>{"alpha"});
+    EXPECT_EQ(window.grid()->tileFor("alpha")->state(), TileState::Installing);
 }
 
 } // namespace
