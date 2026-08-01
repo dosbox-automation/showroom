@@ -19,7 +19,8 @@ bool isLegalTransition(TileState from, TileState to)
     // Cancel and failure are the same move: the archive is not there, so
     // the tile goes back to offering the download.
     case TileState::Downloading:
-        return to == TileState::Downloaded || to == TileState::NotDownloaded;
+        return to == TileState::Downloaded || to == TileState::NotDownloaded
+            || to == TileState::OfflineNotDownloaded;
 
     // The download is verified before it counts, and a rejected archive
     // is discarded rather than kept around to fail the install later.

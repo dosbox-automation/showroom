@@ -8,6 +8,7 @@
 #include "engine/game_launcher.h"
 #include "model/game_catalog.h"
 #include "model/step_sizer.h"
+#include "net/connectivity.h"
 #include "net/downloader.h"
 #include "ui/game_tile.h"
 #include "ui/tile_grid.h"
@@ -926,6 +927,169 @@ TEST_F(IntegrityFixture,
     QTest::mouseClick(window.grid()->tileFor("gamma"), Qt::LeftButton);
 
     EXPECT_EQ(window.grid()->tileFor("gamma")->state(), TileState::Downloaded);
+}
+
+class FakeConnectivity : public Connectivity {
+public:
+    FakeConnectivity() : Connectivity(nullptr) {}
+
+    bool isOnline() const override { return online; }
+
+    void setOnline(bool state)
+    {
+        if (online == state) {
+            return;
+        }
+        online = state;
+        emit onlineChanged(state);
+    }
+
+    bool online = true;
+};
+
+class ConnectivityFixture : public DownloadFixture {};
+
+TEST_F(ConnectivityFixture, offline_at_startup_sets_not_downloaded_tiles_to_offline)
+{
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    FakeConnectivity connectivity;
+    connectivity.online = false;
+
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader,
+                          &connectivity);
+
+    EXPECT_EQ(window.grid()->tileFor("delta")->state(),
+              TileState::OfflineNotDownloaded);
+    EXPECT_EQ(window.grid()->tileFor("epsilon")->state(),
+              TileState::OfflineNotDownloaded);
+}
+
+TEST_F(ConnectivityFixture, going_offline_demotes_not_downloaded_tiles)
+{
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    FakeConnectivity connectivity;
+
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader,
+                          &connectivity);
+    ASSERT_EQ(window.grid()->tileFor("delta")->state(), TileState::NotDownloaded);
+
+    connectivity.setOnline(false);
+
+    EXPECT_EQ(window.grid()->tileFor("delta")->state(),
+              TileState::OfflineNotDownloaded);
+    EXPECT_EQ(window.grid()->tileFor("epsilon")->state(),
+              TileState::OfflineNotDownloaded);
+}
+
+TEST_F(ConnectivityFixture, coming_back_online_restores_not_downloaded_tiles)
+{
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    FakeConnectivity connectivity;
+
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader,
+                          &connectivity);
+
+    connectivity.setOnline(false);
+    ASSERT_EQ(window.grid()->tileFor("delta")->state(),
+              TileState::OfflineNotDownloaded);
+
+    connectivity.setOnline(true);
+
+    EXPECT_EQ(window.grid()->tileFor("delta")->state(), TileState::NotDownloaded);
+    EXPECT_EQ(window.grid()->tileFor("epsilon")->state(), TileState::NotDownloaded);
+}
+
+TEST_F(ConnectivityFixture, an_installed_game_is_unaffected_by_going_offline)
+{
+    std::filesystem::create_directories(cache_ / "installs" / "delta");
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    FakeConnectivity connectivity;
+
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader,
+                          &connectivity);
+    ASSERT_EQ(window.grid()->tileFor("delta")->state(), TileState::Ready);
+
+    connectivity.setOnline(false);
+
+    EXPECT_EQ(window.grid()->tileFor("delta")->state(), TileState::Ready);
+    EXPECT_EQ(window.grid()->tileFor("epsilon")->state(),
+              TileState::OfflineNotDownloaded);
+}
+
+TEST_F(ConnectivityFixture, download_is_blocked_while_offline)
+{
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    FakeConnectivity connectivity;
+    connectivity.online = false;
+
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader,
+                          &connectivity);
+
+    connectivity.setOnline(true);
+    QTest::mouseClick(window.grid()->tileFor("delta"), Qt::LeftButton);
+    ASSERT_EQ(downloader.starts, 1);
+
+    downloader.simulateFailed("test");
+    connectivity.setOnline(false);
+    connectivity.setOnline(true);
+
+    QTest::mouseClick(window.grid()->tileFor("delta"), Qt::LeftButton);
+    connectivity.setOnline(false);
+    EXPECT_EQ(downloader.starts, 2);
+}
+
+TEST_F(ConnectivityFixture, a_failed_download_while_offline_lands_on_offline_state)
+{
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    FakeConnectivity connectivity;
+
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader,
+                          &connectivity);
+
+    QTest::mouseClick(window.grid()->tileFor("delta"), Qt::LeftButton);
+    ASSERT_EQ(window.grid()->tileFor("delta")->state(), TileState::Downloading);
+
+    connectivity.setOnline(false);
+    downloader.simulateFailed("connection lost");
+
+    EXPECT_EQ(window.grid()->tileFor("delta")->state(),
+              TileState::OfflineNotDownloaded);
 }
 
 } // namespace

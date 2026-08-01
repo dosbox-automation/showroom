@@ -26,10 +26,9 @@ const std::set<Transition>& legalTransitions()
             {TileState::NotDownloaded, TileState::OfflineNotDownloaded},
             {TileState::OfflineNotDownloaded, TileState::NotDownloaded},
 
-            // A download either arrives or it does not. Cancel and failure
-            // both land back where they started.
             {TileState::Downloading, TileState::Downloaded},
             {TileState::Downloading, TileState::NotDownloaded},
+            {TileState::Downloading, TileState::OfflineNotDownloaded},
 
             // Verification can reject an archive after the fact, which
             // discards it and puts the tile back on the download button.
@@ -74,13 +73,13 @@ TEST(TileStateTransitions, a_state_never_transitions_to_itself)
     }
 }
 
-TEST(TileStateTransitions, downloading_reaches_downloaded_or_not_downloaded_only)
+TEST(TileStateTransitions, downloading_reaches_downloaded_or_a_not_downloaded_variant)
 {
     EXPECT_TRUE(isLegalTransition(TileState::Downloading, TileState::Downloaded));
     EXPECT_TRUE(isLegalTransition(TileState::Downloading, TileState::NotDownloaded));
+    EXPECT_TRUE(
+            isLegalTransition(TileState::Downloading, TileState::OfflineNotDownloaded));
 
-    // Downloading is not installing: an arriving archive never launches
-    // anything by itself.
     EXPECT_FALSE(isLegalTransition(TileState::Downloading, TileState::Running));
     EXPECT_FALSE(isLegalTransition(TileState::Downloading, TileState::Ready));
     EXPECT_FALSE(isLegalTransition(TileState::Downloading, TileState::Installing));

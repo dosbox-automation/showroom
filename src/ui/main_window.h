@@ -17,6 +17,7 @@
 
 namespace showroom {
 
+class Connectivity;
 class Downloader;
 class GameLauncher;
 class Sidebar;
@@ -35,7 +36,8 @@ public:
     // disabled and no cache is touched.
     MainWindow(const GameCatalog& catalog, const std::filesystem::path& assets_dir,
                Settings settings, StepSizer sizer, GameLauncher* launcher = nullptr,
-               Downloader* downloader = nullptr, QWidget* parent = nullptr);
+               Downloader* downloader = nullptr, Connectivity* connectivity = nullptr,
+               QWidget* parent = nullptr);
 
     static StepSizer sizerForPrimaryScreen();
 
@@ -69,6 +71,7 @@ private:
     bool confirmPortNoticeIfNeeded();
     void startDownload(const GameDefinition& game);
     void setDownloadingTileState(TileState state);
+    void applyOnlineState(bool online);
 
     // Fixed for the life of the window: dragged to a smaller monitor it
     // keeps its step rather than re-measuring behind the user's back.
@@ -79,6 +82,7 @@ private:
 
     GameLauncher* launcher_ = nullptr;
     Downloader* downloader_ = nullptr;
+    Connectivity* connectivity_ = nullptr;
     Sidebar* sidebar_ = nullptr;
     TileGrid* grid_ = nullptr;
     int tile_width_px_ = 0;

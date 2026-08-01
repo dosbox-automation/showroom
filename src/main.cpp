@@ -6,6 +6,7 @@
 #include "app/settings.h"
 #include "app/logging.h"
 #include "engine/game_launcher.h"
+#include "net/connectivity.h"
 #include "net/downloader.h"
 #include "model/game_catalog.h"
 #include "ui/main_window.h"
@@ -65,13 +66,15 @@ int main(int argc, char* argv[])
     }
 
     showroom::Downloader downloader;
+    showroom::Connectivity connectivity;
 
     showroom::MainWindow window(catalog,
                                 assets,
                                 showroom::Settings(showroom::Paths::settingsFile()),
                                 showroom::MainWindow::sizerForPrimaryScreen(),
                                 launcher.get(),
-                                &downloader);
+                                &downloader,
+                                &connectivity);
     window.show();
 
     return QApplication::exec();

@@ -10,6 +10,7 @@
 #include "model/install_check.h"
 #include "model/tile_state.h"
 #include "net/download_plan.h"
+#include "net/connectivity.h"
 #include "net/downloader.h"
 #include "ui/about_dialog.h"
 #include "ui/game_tile.h"
@@ -51,14 +52,15 @@ StepSizer MainWindow::sizerForPrimaryScreen()
 MainWindow::MainWindow(const GameCatalog& catalog,
                        const std::filesystem::path& assets_dir, Settings settings,
                        StepSizer sizer, GameLauncher* launcher, Downloader* downloader,
-                       QWidget* parent)
+                       Connectivity* connectivity, QWidget* parent)
         : QMainWindow(parent),
           sizer_(std::move(sizer)),
           settings_(std::move(settings)),
           catalog_(catalog),
           assets_dir_(assets_dir),
           launcher_(launcher),
-          downloader_(downloader)
+          downloader_(downloader),
+          connectivity_(connectivity)
 {
     setWindowTitle(QStringLiteral("dosbox-automation showroom"));
     setAutoFillBackground(true);
@@ -149,6 +151,12 @@ MainWindow::MainWindow(const GameCatalog& catalog,
         connect(downloader_, &Downloader::cancelled, this, [this]() {
             setDownloadingTileState(TileState::NotDownloaded);
         });
+    }
+
+    if (connectivity_ != nullptr) {
+        applyOnlineState(connectivity_->isOnline());
+        connect(connectivity_, &Connectivity::onlineChanged,
+                this, &MainWindow::applyOnlineState);
     }
 
     setCentralWidget(central);
@@ -299,9 +307,28 @@ void MainWindow::onTileAction(const QString& slug)
     }
 }
 
+void MainWindow::applyOnlineState(bool online)
+{
+    for (const auto& game : catalog_) {
+        GameTile* tile = grid_->tileFor(QString::fromStdString(game.slug()));
+        if (tile == nullptr) {
+            continue;
+        }
+        if (online && tile->state() == TileState::OfflineNotDownloaded) {
+            tile->setState(TileState::NotDownloaded);
+        } else if (!online && tile->state() == TileState::NotDownloaded) {
+            tile->setState(TileState::OfflineNotDownloaded);
+        }
+    }
+}
+
 void MainWindow::startDownload(const GameDefinition& game)
 {
     if (downloader_ == nullptr || downloader_->isRunning()) {
+        return;
+    }
+    if (connectivity_ != nullptr && !connectivity_->isOnline()) {
+        log_warn(kLogComponent, "download of %s blocked: offline", game.slug().c_str());
         return;
     }
     const auto plan = downloadPlanFor(game);
@@ -332,6 +359,10 @@ void MainWindow::startDownload(const GameDefinition& game)
 
 void MainWindow::setDownloadingTileState(TileState state)
 {
+    if (state == TileState::NotDownloaded
+        && connectivity_ != nullptr && !connectivity_->isOnline()) {
+        state = TileState::OfflineNotDownloaded;
+    }
     if (GameTile* tile = grid_->tileFor(QString::fromStdString(downloading_slug_))) {
         tile->setState(state);
     }
