@@ -147,8 +147,12 @@ QString GameTile::overlayMessage() const
     case TileState::NoRecipe: return tr("Not installable yet - check back later");
     case TileState::Downloading: return tr("DOWNLOADING %1%").arg(progress_percent_);
     case TileState::Installing: return tr("INSTALLING %1%").arg(progress_percent_);
-    default: return {};
+    case TileState::NotDownloaded: return hovered_ ? tr("Download") : QString();
+    case TileState::Downloaded: return hovered_ ? tr("Install & play") : QString();
+    case TileState::Ready: return hovered_ ? tr("Play") : QString();
+    case TileState::Running: return hovered_ ? tr("Stop") : QString();
     }
+    return {};
 }
 
 void GameTile::resizeEvent(QResizeEvent* event)
@@ -208,14 +212,20 @@ void GameTile::paintEvent(QPaintEvent* /*event*/)
         painter.drawPixmap(at, scaled_);
     }
 
+    if (hovered_ && actionFor(state_) != TileAction::None) {
+        painter.fillRect(rect(), QColor(255, 255, 255, 13));
+    }
+
     const QString message = overlayMessage();
     if (!message.isEmpty()) {
-        painter.fillRect(rect(), theme::kOverlayScrim);
+        const bool is_hover_hint = hovered_ && actionFor(state_) != TileAction::None
+                                && !showsProgress(state_);
+
+        if (!is_hover_hint) {
+            painter.fillRect(rect(), theme::kOverlayScrim);
+        }
 
         if (showsProgress(state_)) {
-            // The ring is the mockup's spinner standing still. Turning
-            // it needs a timer and something real to wait for, which
-            // arrives with the download and install phases.
             const int diameter = 26;
             const QRectF ring((width() - diameter) / 2.0,
                               height() / 2.0 - diameter - 6,
@@ -233,8 +243,14 @@ void GameTile::paintEvent(QPaintEvent* /*event*/)
         }
 
         painter.setFont(theme::monospaceFont(10, QFont::Bold));
-        painter.setPen(showsProgress(state_) ? theme::kBrightText : theme::kMutedText);
         const QRect text_area = rect().adjusted(10, 0, -10, -theme::kLegendHeightPx);
+
+        if (is_hover_hint) {
+            painter.setPen(theme::kBrightText);
+        } else {
+            painter.setPen(showsProgress(state_) ? theme::kBrightText : theme::kMutedText);
+        }
+
         painter.drawText(text_area, Qt::AlignCenter | Qt::TextWordWrap, message);
     }
 

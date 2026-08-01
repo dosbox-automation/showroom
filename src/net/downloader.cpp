@@ -4,6 +4,8 @@
 
 #include "net/downloader.h"
 
+#include "app/logging.h"
+
 #include <QDateTime>
 #include <QNetworkRequest>
 
@@ -11,6 +13,11 @@
 #include <system_error>
 
 namespace showroom {
+namespace {
+
+constexpr const char* kLogComponent = "downloader";
+
+} // namespace
 
 Downloader::Downloader(QObject* parent) : QObject(parent) {}
 
@@ -74,6 +81,15 @@ bool Downloader::start(const QUrl& url, const std::filesystem::path& destination
         request.setRawHeader("Range",
                              "bytes=" + QByteArray::number(qint64(resume_from_)) + "-");
     }
+
+    log_info(kLogComponent,
+             "starting download: %s -> %s%s",
+             url.toString().toUtf8().constData(),
+             destination_.string().c_str(),
+             resume_from_ > 0
+                     ? (std::string(" (resuming from ") + std::to_string(resume_from_) + ")")
+                               .c_str()
+                     : "");
 
     reply_ = network_.get(request);
     connect(reply_, &QNetworkReply::readyRead, this, &Downloader::onReadyRead);
@@ -214,6 +230,13 @@ void Downloader::finishTransfer()
         std::filesystem::last_write_time(destination_, stamp, ec);
     }
 
+    std::error_code size_ec;
+    const auto final_size = std::filesystem::file_size(destination_, size_ec);
+    log_info(kLogComponent,
+             "download complete: %s (%llu bytes)",
+             destination_.string().c_str(),
+             size_ec ? 0ULL : static_cast<unsigned long long>(final_size));
+
     const QString path = QString::fromStdString(destination_.string());
     cleanupReply();
     emit finished(path);
@@ -226,6 +249,10 @@ void Downloader::failTransfer(const QString& reason, bool keep_part)
         std::error_code ec;
         std::filesystem::remove(part_path_, ec);
     }
+    log_error(kLogComponent,
+              "download failed: %s (%s)",
+              destination_.string().c_str(),
+              reason.toUtf8().constData());
     if (reply_ != nullptr) {
         reply_->disconnect(this);
         reply_->abort();
