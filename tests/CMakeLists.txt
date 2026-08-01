@@ -45,6 +45,7 @@ qt_add_executable(showroom_engine_tests
   engine/api_client_tests.cpp
   engine/engine_process_tests.cpp
   engine/game_launcher_tests.cpp
+  engine/install_runner_tests.cpp
   net/archive_extractor_tests.cpp
   net/download_plan_tests.cpp
   net/downloader_tests.cpp

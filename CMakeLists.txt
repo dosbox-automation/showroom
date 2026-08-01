@@ -73,6 +73,7 @@ qt_add_library(showroom_engine STATIC
   src/net/file_verifier.cpp
   src/engine/engine_process.cpp
   src/engine/game_launcher.cpp
+  src/engine/install_runner.cpp
 )
 
 target_link_libraries(showroom_engine PUBLIC

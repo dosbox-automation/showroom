@@ -128,6 +128,9 @@ std::string sanitizedPathComponent(std::string_view value);
 // install root itself.
 bool isSafeRelativePath(std::string_view value);
 
+// Lexical only; backs up the slug validators rather than replacing them.
+bool isWithin(const std::filesystem::path& base, const std::filesystem::path& candidate);
+
 std::optional<License> licenseFromString(std::string_view value);
 std::optional<InstallType> installTypeFromString(std::string_view value);
 

@@ -83,27 +83,6 @@ std::optional<std::filesystem::path> gameDir(const std::filesystem::path& parent
 
 } // namespace
 
-bool isWithin(const std::filesystem::path& base, const std::filesystem::path& candidate)
-{
-    if (base.empty() || !base.is_absolute() || !candidate.is_absolute()) {
-        return false;
-    }
-
-    const std::filesystem::path normal_base = base.lexically_normal();
-    const std::filesystem::path normal_candidate = candidate.lexically_normal();
-
-    // Element-wise rather than a string prefix: "/a/bb" starts with
-    // "/a/b" as text and is a different directory.
-    auto base_it = normal_base.begin();
-    auto candidate_it = normal_candidate.begin();
-    for (; base_it != normal_base.end(); ++base_it, ++candidate_it) {
-        if (candidate_it == normal_candidate.end() || *candidate_it != *base_it) {
-            return false;
-        }
-    }
-    return true;
-}
-
 std::filesystem::path Paths::assetsDir()
 {
     if (const char* override_dir = std::getenv("SHOWROOM_ASSETS_DIR")) {

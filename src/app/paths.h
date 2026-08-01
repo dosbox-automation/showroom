@@ -5,14 +5,15 @@
 #ifndef SHOWROOM_APP_PATHS_H
 #define SHOWROOM_APP_PATHS_H
 
+// isWithin moved to model/game_definition.h with the other path
+// validators; included here so existing callers keep compiling.
+#include "model/game_definition.h"
+
 #include <filesystem>
 #include <optional>
 #include <string_view>
 
 namespace showroom {
-
-// Lexical only; backs up the slug validators rather than replacing them.
-bool isWithin(const std::filesystem::path& base, const std::filesystem::path& candidate);
 
 // Assets are read-only and ship with the binary; the cache is writable
 // and trusted for nothing.
