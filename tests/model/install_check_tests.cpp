@@ -4,12 +4,14 @@
 
 #include "model/install_check.h"
 
+#include "imported/log.h"
 #include "model/game_definition.h"
 
 #include <gtest/gtest.h>
 
 #include <fstream>
 #include <string>
+#include <vector>
 
 namespace showroom {
 namespace {
@@ -57,7 +59,8 @@ protected:
     void SetUp() override
     {
         const auto* info = testing::UnitTest::GetInstance()->current_test_info();
-        dir_ = std::filesystem::temp_directory_path()
+        // House rule: scratch lives in the project .workspace, not /tmp.
+        dir_ = std::filesystem::path(SHOWROOM_TEST_WORKSPACE)
              / ("showroom-check-"
                 + std::to_string(testing::UnitTest::GetInstance()->random_seed()) + "-"
                 + info->name());
@@ -154,6 +157,85 @@ TEST_F(InstallCheckDir, a_directory_where_a_file_is_expected_is_damage)
     std::filesystem::create_directories(dir_ / "PROBE.EXE");
 
     EXPECT_EQ(installDamage(game, dir_).size(), 1u);
+}
+
+class VerifyInstallDir : public InstallCheckDir {
+protected:
+    void SetUp() override
+    {
+        InstallCheckDir::SetUp();
+        Logger::instance().add_sink([this](LogLevel level,
+                                           const char* component,
+                                           const std::string& message) {
+            if (level == LogLevel::Warn && std::string(component) == "install_check") {
+                warnings_.push_back(message);
+            }
+        });
+    }
+
+    void TearDown() override
+    {
+        Logger::instance().clear_sinks();
+        InstallCheckDir::TearDown();
+    }
+
+    std::vector<std::string> warnings_;
+};
+
+TEST_F(VerifyInstallDir, an_intact_install_verifies_without_warnings)
+{
+    const auto game = parseOrDie(
+            gameWithExpectedFiles("\"SUB/PROBE.EXE\" = { size = 10 }\n"));
+    writeBytes(dir_ / "SUB" / "PROBE.EXE", 10);
+
+    EXPECT_TRUE(verifyInstall(game, dir_).empty());
+    EXPECT_TRUE(warnings_.empty());
+}
+
+TEST_F(VerifyInstallDir, verification_failures_carry_through_from_the_damage_check)
+{
+    const auto game = parseOrDie(
+            gameWithExpectedFiles("\"A.DAT\" = { size = 5 }\n"
+                                  "\"B.DAT\" = { size = 5 }\n"));
+    writeBytes(dir_ / "B.DAT", 2);
+
+    const auto failures = verifyInstall(game, dir_);
+    EXPECT_EQ(failures.size(), 2u);
+}
+
+TEST_F(VerifyInstallDir, an_empty_expectation_list_passes_but_says_so_out_loud)
+{
+    // A silent pass here would let a definition with no expected_files
+    // claim every install succeeded.
+    const auto game = parseOrDie(
+            "slug = \"probe\"\n"
+            "title = \"Probe\"\n"
+            "rank = 1\n"
+            "license = \"shareware\"\n"
+            "[sources.primary]\n"
+            "url = \"https://example.invalid/probe.zip\"\n"
+            "[dosbox]\n"
+            "machine = \"svga_s3\"\n"
+            "cpu_cycles = 3000\n"
+            "cpu_cycles_protected = 3000\n"
+            "[launch]\n"
+            "executable = \"PROBE.EXE\"\n"
+            "[install]\n"
+            "max_runtime_seconds = 60\n");
+
+    EXPECT_TRUE(verifyInstall(game, dir_).empty());
+    ASSERT_EQ(warnings_.size(), 1u);
+    EXPECT_NE(warnings_.front().find("probe"), std::string::npos);
+}
+
+TEST_F(VerifyInstallDir, a_missing_install_dir_fails_verification_rather_than_warning)
+{
+    const auto game = parseOrDie(
+            gameWithExpectedFiles("\"PROBE.EXE\" = { size = 10 }\n"));
+
+    const auto failures = verifyInstall(game, dir_ / "never-created");
+    EXPECT_EQ(failures.size(), 1u);
+    EXPECT_TRUE(warnings_.empty());
 }
 
 } // namespace

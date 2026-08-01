@@ -19,6 +19,12 @@ namespace showroom {
 std::vector<std::string> installDamage(const GameDefinition& game,
                                        const std::filesystem::path& install_dir);
 
+// Post-install gate: installDamage plus the empty-expectations rule -
+// a definition listing no files cannot prove an install worked, so
+// that case passes with a logged warning instead of silently.
+std::vector<std::string> verifyInstall(const GameDefinition& game,
+                                       const std::filesystem::path& install_dir);
+
 } // namespace showroom
 
 #endif // SHOWROOM_MODEL_INSTALL_CHECK_H

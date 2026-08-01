@@ -4,6 +4,8 @@
 
 #include "model/install_check.h"
 
+#include "imported/log.h"
+
 #include <system_error>
 
 namespace showroom {
@@ -35,6 +37,18 @@ std::vector<std::string> installDamage(const GameDefinition& game,
         }
     }
     return damage;
+}
+
+std::vector<std::string> verifyInstall(const GameDefinition& game,
+                                       const std::filesystem::path& install_dir)
+{
+    if (game.install().expected_files.empty()) {
+        log_warn("install_check",
+                 "%s: no expected files declared, install result unverifiable",
+                 game.slug().c_str());
+        return {};
+    }
+    return installDamage(game, install_dir);
 }
 
 } // namespace showroom
