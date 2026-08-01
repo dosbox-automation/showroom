@@ -12,6 +12,7 @@
       ]
     },
     "gtest",
+    "libarchive",
     "tomlplusplus"
   ],
   "builtin-baseline": "8defa4b8bc4c35071c678e87a0e140dd433489bb"

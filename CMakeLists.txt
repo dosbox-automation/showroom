@@ -34,6 +34,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # distribution Qt builds, so check the build VMs before bumping.
 find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets Network)
 find_package(tomlplusplus CONFIG REQUIRED)
+find_package(LibArchive REQUIRED)
 
 qt_standard_project_setup()
 
@@ -77,6 +78,11 @@ target_link_libraries(showroom_engine PUBLIC
   showroom_model
   Qt6::Core
   Qt6::Network
+)
+
+# PRIVATE: archive.h stays out of the engine's public surface.
+target_link_libraries(showroom_engine PRIVATE
+  LibArchive::LibArchive
 )
 
 # The sidebar badge, set here so the release train has one place to
