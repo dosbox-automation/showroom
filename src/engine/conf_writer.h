@@ -30,6 +30,29 @@ public:
     static std::optional<std::filesystem::path> writeConf(
             const GameDefinition& game, const std::filesystem::path& cache_base,
             std::string& error);
+
+    // Install mode: mounts only, no launch, no exit - the recipe types
+    // the installer invocation and controls shutdown. C: is a staging
+    // dir under the extracts dir because without a primary config the
+    // conf anchor is the engine's only allowed mount root; the runner
+    // moves the staged result into installs/<slug> after verification.
+    static std::optional<std::string> renderInstallConf(
+            const GameDefinition& game, const std::filesystem::path& extracts_dir,
+            std::string& error);
+
+    // Lands at <extracts_dir>/install.conf: the conf's directory is an
+    // image root, which is what lets the recipe's bare-name drive_swap
+    // pass mount policy.
+    static std::optional<std::filesystem::path> writeInstallConf(
+            const GameDefinition& game, const std::filesystem::path& extracts_dir,
+            std::string& error);
+
+    // The staging dir renderInstallConf mounts as C:.
+    static std::filesystem::path installStagingDir(
+            const std::filesystem::path& extracts_dir)
+    {
+        return extracts_dir / "installs";
+    }
 };
 
 } // namespace showroom

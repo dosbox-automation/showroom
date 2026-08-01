@@ -48,33 +48,24 @@ bool wantsCdDrive(const GameDefinition& game)
     return !sources.empty() && sources.front().install_type == InstallType::IsoInstall;
 }
 
-bool validate(const GameDefinition& game, const std::filesystem::path& cache_base,
-              std::string& error)
+bool validateConfDir(const std::filesystem::path& dir, std::string_view name,
+                     std::string& error)
 {
-    if (!cache_base.is_absolute()) {
-        error = "cache base must be an absolute path";
+    if (!dir.is_absolute()) {
+        error = std::string(name) + " must be an absolute path";
         return false;
     }
-    if (!pathFitsConfLine(cache_base)) {
-        error = "cache base path cannot be carried by a conf line";
+    if (!pathFitsConfLine(dir)) {
+        error = std::string(name) + " path cannot be carried by a conf line";
         return false;
     }
+    return true;
+}
+
+bool validateEngineSettings(const GameDefinition& game, std::string& error)
+{
     if (!isSafeSlug(game.slug())) {
         error = "slug \"" + game.slug() + "\" is not a safe directory name";
-        return false;
-    }
-    if (!game.isLaunchable()) {
-        error = "game \"" + game.slug() + "\" has no launch executable";
-        return false;
-    }
-    if (!isSafePathComponent(game.launch().executable)) {
-        error = "executable \"" + game.launch().executable
-              + "\" is not a plain file name";
-        return false;
-    }
-    if (!isSafeRelativePath(game.launch().working_dir)) {
-        error = "working_dir \"" + game.launch().working_dir
-              + "\" escapes the install directory";
         return false;
     }
     if (game.dosbox().cpu_cycles <= 0 || game.dosbox().cpu_cycles_protected <= 0) {
@@ -99,20 +90,35 @@ bool validate(const GameDefinition& game, const std::filesystem::path& cache_bas
     return true;
 }
 
-} // namespace
-
-std::optional<std::string> ConfWriter::renderConf(const GameDefinition& game,
-                                                  const std::filesystem::path& cache_base,
-                                                  std::string& error)
+bool validate(const GameDefinition& game, const std::filesystem::path& cache_base,
+              std::string& error)
 {
-    error.clear();
-    if (!validate(game, cache_base, error)) {
-        return std::nullopt;
+    if (!validateConfDir(cache_base, "cache base", error)) {
+        return false;
     }
+    if (!validateEngineSettings(game, error)) {
+        return false;
+    }
+    if (!game.isLaunchable()) {
+        error = "game \"" + game.slug() + "\" has no launch executable";
+        return false;
+    }
+    if (!isSafePathComponent(game.launch().executable)) {
+        error = "executable \"" + game.launch().executable
+              + "\" is not a plain file name";
+        return false;
+    }
+    if (!isSafeRelativePath(game.launch().working_dir)) {
+        error = "working_dir \"" + game.launch().working_dir
+              + "\" escapes the install directory";
+        return false;
+    }
+    return true;
+}
 
+void renderEngineSettings(const GameDefinition& game, std::ostringstream& conf)
+{
     const auto& sound = game.dosbox().sound;
-    std::ostringstream conf;
-
     conf << "[sdl]\n"
          << "output = texture\n\n";
     conf << "[dosbox]\n"
@@ -138,6 +144,103 @@ std::optional<std::string> ConfWriter::renderConf(const GameDefinition& game,
          << "webserver_enabled = true\n"
          << "webserver_token_file = false\n"
          << "webserver_port = " << kShowroomEnginePort << "\n\n";
+}
+
+bool isFloppyImageName(const std::filesystem::path& name)
+{
+    auto ext = name.extension().string();
+    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+    return ext == ".ima" || ext == ".img";
+}
+
+std::optional<std::filesystem::path> firstFloppyImage(
+        const std::filesystem::path& extracts_dir, std::string& error)
+{
+    std::error_code ec;
+    std::vector<std::filesystem::path> images;
+    for (const auto& entry : std::filesystem::directory_iterator(extracts_dir, ec)) {
+        if (entry.is_regular_file(ec) && isFloppyImageName(entry.path().filename())) {
+            images.push_back(entry.path());
+        }
+    }
+    if (ec) {
+        error = "cannot scan extracts dir: " + ec.message();
+        return std::nullopt;
+    }
+    if (images.empty()) {
+        error = "no floppy image in " + extracts_dir.string();
+        return std::nullopt;
+    }
+    return *std::min_element(images.begin(), images.end());
+}
+
+// Atomic and owner-only; on failure nothing is left behind.
+std::optional<std::filesystem::path> writeConfFile(const std::filesystem::path& dir,
+                                                   const std::string& filename,
+                                                   const std::string& contents,
+                                                   std::string& error)
+{
+    std::error_code ec;
+    if (!std::filesystem::is_directory(dir, ec)) {
+        error = "target directory does not exist: " + dir.string();
+        return std::nullopt;
+    }
+
+    std::random_device rd;
+    const auto temp = dir / std::format("{}.{:08x}{:08x}.tmp", filename, rd(), rd());
+    {
+        std::ofstream out(temp, std::ios::binary | std::ios::trunc);
+        if (!out) {
+            error = "cannot create " + temp.string();
+            return std::nullopt;
+        }
+        out << contents;
+        out.flush();
+        if (!out) {
+            error = "write failed: " + temp.string();
+            out.close();
+            std::filesystem::remove(temp, ec);
+            return std::nullopt;
+        }
+    }
+
+    // The ofstream mode is umask-dependent; the conf must end up 0600.
+    std::filesystem::permissions(temp,
+                                 std::filesystem::perms::owner_read
+                                         | std::filesystem::perms::owner_write,
+                                 std::filesystem::perm_options::replace,
+                                 ec);
+    if (ec) {
+        error = "cannot set mode on " + temp.string() + ": " + ec.message();
+        std::filesystem::remove(temp, ec);
+        return std::nullopt;
+    }
+
+    const auto target = dir / filename;
+    std::filesystem::rename(temp, target, ec);
+    if (ec) {
+        error = "cannot move conf into place: " + ec.message();
+        std::filesystem::remove(temp, ec);
+        return std::nullopt;
+    }
+    return target;
+}
+
+} // namespace
+
+std::optional<std::string> ConfWriter::renderConf(const GameDefinition& game,
+                                                  const std::filesystem::path& cache_base,
+                                                  std::string& error)
+{
+    error.clear();
+    if (!validate(game, cache_base, error)) {
+        return std::nullopt;
+    }
+
+    std::ostringstream conf;
+    renderEngineSettings(game, conf);
 
     conf << "[autoexec]\n";
     conf << "mount c \"" << (cache_base / "installs").string() << "\"\n";
@@ -165,50 +268,63 @@ std::optional<std::filesystem::path> ConfWriter::writeConf(
     if (!conf) {
         return std::nullopt;
     }
-    std::error_code ec;
-    if (!std::filesystem::is_directory(cache_base, ec)) {
-        error = "cache base does not exist: " + cache_base.string();
+    return writeConfFile(cache_base, "run.conf", *conf, error);
+}
+
+std::optional<std::string> ConfWriter::renderInstallConf(
+        const GameDefinition& game, const std::filesystem::path& extracts_dir,
+        std::string& error)
+{
+    error.clear();
+    if (!validateConfDir(extracts_dir, "extracts dir", error)) {
+        return std::nullopt;
+    }
+    if (!validateEngineSettings(game, error)) {
+        return std::nullopt;
+    }
+    if (game.sources().empty()) {
+        error = "game \"" + game.slug() + "\" has no sources";
+        return std::nullopt;
+    }
+    const auto install_type = game.sources().front().install_type;
+    if (!install_type) {
+        error = "primary source of \"" + game.slug() + "\" has no install type";
+        return std::nullopt;
+    }
+    if (*install_type != InstallType::FloppyInstall
+        && *install_type != InstallType::IsoInstall) {
+        error = "install type of \"" + game.slug()
+              + "\" is not driven through the engine";
         return std::nullopt;
     }
 
-    std::random_device rd;
-    const auto temp = cache_base / std::format("run.conf.{:08x}{:08x}.tmp", rd(), rd());
-    {
-        std::ofstream out(temp, std::ios::binary | std::ios::trunc);
-        if (!out) {
-            error = "cannot create " + temp.string();
+    std::ostringstream conf;
+    renderEngineSettings(game, conf);
+
+    conf << "[autoexec]\n";
+    if (*install_type == InstallType::FloppyInstall) {
+        const auto image = firstFloppyImage(extracts_dir, error);
+        if (!image) {
             return std::nullopt;
         }
-        out << *conf;
-        out.flush();
-        if (!out) {
-            error = "write failed: " + temp.string();
-            out.close();
-            std::filesystem::remove(temp, ec);
-            return std::nullopt;
-        }
+        conf << "mount a \"" << image->string() << "\" -t floppy\n";
+    } else {
+        conf << "mount d \"" << extracts_dir.string() << "\" -t cdrom\n";
     }
+    conf << "mount c \"" << installStagingDir(extracts_dir).string() << "\"\n";
 
-    // The ofstream mode is umask-dependent; the conf must end up 0600.
-    std::filesystem::permissions(temp,
-                                 std::filesystem::perms::owner_read
-                                         | std::filesystem::perms::owner_write,
-                                 std::filesystem::perm_options::replace,
-                                 ec);
-    if (ec) {
-        error = "cannot set mode on " + temp.string() + ": " + ec.message();
-        std::filesystem::remove(temp, ec);
+    return conf.str();
+}
+
+std::optional<std::filesystem::path> ConfWriter::writeInstallConf(
+        const GameDefinition& game, const std::filesystem::path& extracts_dir,
+        std::string& error)
+{
+    const auto conf = renderInstallConf(game, extracts_dir, error);
+    if (!conf) {
         return std::nullopt;
     }
-
-    const auto target = cache_base / "run.conf";
-    std::filesystem::rename(temp, target, ec);
-    if (ec) {
-        error = "cannot move conf into place: " + ec.message();
-        std::filesystem::remove(temp, ec);
-        return std::nullopt;
-    }
-    return target;
+    return writeConfFile(extracts_dir, "install.conf", *conf, error);
 }
 
 } // namespace showroom

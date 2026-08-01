@@ -20,6 +20,10 @@ target_link_libraries(showroom_tests PRIVATE
   GTest::gtest_main
 )
 
+target_compile_definitions(showroom_tests PRIVATE
+  SHOWROOM_TEST_WORKSPACE="${CMAKE_SOURCE_DIR}/.workspace"
+)
+
 include(GoogleTest)
 
 gtest_discover_tests(showroom_tests
