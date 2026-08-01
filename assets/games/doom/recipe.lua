@@ -23,7 +23,8 @@ dosbox.wait_frames(30)
 if not dosbox.wait_for_text("insert disk DOOM 2", 1800) then
     dosbox.abort("installer never asked for disk 2")
 end
-dosbox.drive_swap("A", "disk2.ima")
+-- The image name is the pinned source archive's own entry name.
+dosbox.drive_swap("A", "Doom Shareware Floppy (v1.666) [Disk 2 of 2].ima")
 dosbox.output["progress"] = "50"
 dosbox.key("KBD_enter", true)
 dosbox.wait_frames(8)
