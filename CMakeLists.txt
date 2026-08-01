@@ -66,6 +66,7 @@ target_link_libraries(showroom_model PUBLIC
 # purity, so it sits between showroom_model and showroom_ui.
 qt_add_library(showroom_engine STATIC
   src/engine/api_client.cpp
+  src/net/archive_extractor.cpp
   src/net/connectivity.cpp
   src/net/download_plan.cpp
   src/net/downloader.cpp

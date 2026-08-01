@@ -41,19 +41,24 @@ qt_add_executable(showroom_engine_tests
   engine/api_client_tests.cpp
   engine/engine_process_tests.cpp
   engine/game_launcher_tests.cpp
+  net/archive_extractor_tests.cpp
   net/download_plan_tests.cpp
   net/downloader_tests.cpp
   net/file_verifier_tests.cpp
 )
 
+# LibArchive directly: the fixtures write their own archives, which the
+# engine's private link does not provide headers for.
 target_link_libraries(showroom_engine_tests PRIVATE
   showroom_engine
+  LibArchive::LibArchive
   Qt6::Test
   GTest::gtest
 )
 
 target_compile_definitions(showroom_engine_tests PRIVATE
   FAKE_ENGINE_PATH="$<TARGET_FILE:fake_engine>"
+  SHOWROOM_TEST_WORKSPACE="${CMAKE_SOURCE_DIR}/.workspace"
 )
 
 add_dependencies(showroom_engine_tests fake_engine)
