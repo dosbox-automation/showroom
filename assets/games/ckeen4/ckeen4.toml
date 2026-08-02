@@ -8,7 +8,7 @@ slug = "ckeen4"
 title = "Commander Keen 4"
 rank = 4
 license = "shareware"
-recipe_status = "todo"
+recipe_status = "done"
 
 [sources.primary]
 role = "primary"
@@ -32,11 +32,12 @@ sblaster_type = "sb16"
 mpu401 = "intelligent"
 midi_device = "fluidsynth"
 
-# HAND-FILLED. An empty executable means the game has no recipe yet;
-# the showroom shows the tile but refuses to launch it.
+# HAND-FILLED. Two ARJSFX self-extractors off the floppy build \KEEN4;
+# sound is configured in the game's own menu, no setup step (probe
+# 2026-08-02).
 [launch]
-executable = ""
-working_dir = ""
+executable = "KEEN4E.EXE"
+working_dir = "KEEN4"
 setup_exe = ""
 
 [screenshots]
@@ -44,8 +45,10 @@ title = "title.png"
 gameplay = "gameplay.png"
 
 [install]
-max_runtime_seconds = 120
+max_runtime_seconds = 300
 
 # HAND-FILLED. Files that must exist after a successful install,
 # checked before every launch. Sound config files vary - leave them out.
 [install.expected_files]
+"KEEN4/KEEN4E.EXE"   = { size = 105108 }
+"KEEN4/GAMEMAPS.CK4" = { size = 99040 }

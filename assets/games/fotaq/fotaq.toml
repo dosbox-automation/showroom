@@ -8,7 +8,7 @@ slug = "fotaq"
 title = "Flight of the Amazon Queen"
 rank = 11
 license = "freeware"
-recipe_status = "todo"
+recipe_status = "done"
 
 [sources.primary]
 role = "primary"
@@ -32,20 +32,24 @@ sblaster_type = "sb16"
 mpu401 = "intelligent"
 midi_device = "fluidsynth"
 
-# HAND-FILLED. An empty executable means the game has no recipe yet;
-# the showroom shows the tile but refuses to launch it.
+# HAND-FILLED. Six-floppy installer set (full game - the mirror zip is
+# only the demo). AQ.BAT runs the game's own setup on first start; the
+# game keeps config/saves in QUEEN.SAV at the drive root (probe
+# 2026-08-02).
 [launch]
-executable = ""
-working_dir = ""
-setup_exe = ""
+executable = "AQ.BAT"
+working_dir = "QUEEN"
+setup_exe = "SETUP.EXE"
 
 [screenshots]
 title = "title.png"
 gameplay = "gameplay.png"
 
 [install]
-max_runtime_seconds = 120
+max_runtime_seconds = 420
 
 # HAND-FILLED. Files that must exist after a successful install,
 # checked before every launch. Sound config files vary - leave them out.
 [install.expected_files]
+"QUEEN/QUEEN.EXE" = { size = 287285 }
+"QUEEN/QUEEN.1"   = { size = 22677657 }
