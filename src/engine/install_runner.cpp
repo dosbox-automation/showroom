@@ -177,7 +177,7 @@ bool InstallRunner::startInstall(const GameDefinition& game, std::string& error)
     }
 
     const auto extracts_base = cache_base_ / "extracts";
-    extracts_dir_ = extracts_base / game.slug();
+    extracts_dir_ = ConfWriter::extractsDir(cache_base_, game.slug());
     if (!isWithin(extracts_base, extracts_dir_)) {
         error = "extracts dir escapes the cache";
         return false;
@@ -218,20 +218,25 @@ bool InstallRunner::startInstall(const GameDefinition& game, std::string& error)
         return false;
     }
 
-    const bool extracted = std::filesystem::is_directory(extracts_dir_, ec)
-                        && std::filesystem::directory_iterator(extracts_dir_, ec)
-                                   != std::filesystem::directory_iterator();
-    if (!extracted) {
-        const auto result = game.sources().front().install_type == InstallType::ExeInstall
-                                  ? copySelfExtractor(archive_,
-                                                      extracts_dir_ / plan->filename)
-                                  : extractor_.extract(archive_, extracts_dir_);
-        if (!result.ok) {
-            // A partial extraction would pass the non-empty check next
-            // time and skip extraction against broken contents.
-            std::filesystem::remove_all(extracts_dir_, ec);
-            error = "extraction failed: " + result.error;
-            return false;
+    // The CD image is the medium: it mounts from downloads/ in place,
+    // so an iso install has nothing to extract.
+    if (game.sources().front().install_type != InstallType::IsoInstall) {
+        const bool extracted = std::filesystem::is_directory(extracts_dir_, ec)
+                            && std::filesystem::directory_iterator(extracts_dir_, ec)
+                                       != std::filesystem::directory_iterator();
+        if (!extracted) {
+            const auto result = game.sources().front().install_type
+                                             == InstallType::ExeInstall
+                                      ? copySelfExtractor(archive_,
+                                                          extracts_dir_ / plan->filename)
+                                      : extractor_.extract(archive_, extracts_dir_);
+            if (!result.ok) {
+                // A partial extraction would pass the non-empty check next
+                // time and skip extraction against broken contents.
+                std::filesystem::remove_all(extracts_dir_, ec);
+                error = "extraction failed: " + result.error;
+                return false;
+            }
         }
     }
 
@@ -241,7 +246,7 @@ bool InstallRunner::startInstall(const GameDefinition& game, std::string& error)
         return false;
     }
 
-    const auto conf = ConfWriter::writeInstallConf(game, extracts_dir_, error);
+    const auto conf = ConfWriter::writeInstallConf(game, cache_base_, error);
     if (!conf) {
         return false;
     }

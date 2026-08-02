@@ -107,6 +107,13 @@ protected:
 
     void TearDown() override { std::filesystem::remove_all(dir_); }
 
+    void addDownloadedFile(const std::string& name)
+    {
+        std::filesystem::create_directories(dir_ / "downloads" / "doom");
+        std::ofstream out(dir_ / "downloads" / "doom" / name, std::ios::binary);
+        out << "image bytes";
+    }
+
     std::filesystem::path dir_;
 };
 
@@ -167,15 +174,27 @@ TEST_F(ConfWriterDir, empty_working_dir_stays_at_the_drive_root)
     EXPECT_EQ(conf->find("cd \\"), std::string::npos);
 }
 
-TEST_F(ConfWriterDir, cd_title_mounts_its_download_directory_as_cdrom)
+TEST_F(ConfWriterDir, cd_title_mounts_the_downloaded_iso_image_as_cdrom)
 {
+    // The ISO never leaves downloads/; the run conf's anchor (the cache
+    // base) is what makes that path mountable.
     const auto game = parseOrDie(doomLikeToml("svga_s3", "isoinstall"));
+    addDownloadedFile("game.iso");
     std::string error;
     const auto conf = ConfWriter::renderConf(game, dir_, error);
     ASSERT_TRUE(conf) << error;
 
-    const auto downloads = (dir_ / "downloads" / "doom").string();
-    EXPECT_TRUE(hasLine(*conf, "mount d \"" + downloads + "\" -t cdrom"));
+    const auto image = (dir_ / "downloads" / "doom" / "game.iso").string();
+    EXPECT_TRUE(hasLine(*conf, "mount d \"" + image + "\" -t cdrom"));
+}
+
+TEST_F(ConfWriterDir, cd_title_without_a_downloaded_iso_is_refused)
+{
+    // A silent directory mount would boot the game with an empty D:.
+    const auto game = parseOrDie(doomLikeToml("svga_s3", "isoinstall"));
+    std::string error;
+    EXPECT_FALSE(ConfWriter::renderConf(game, dir_, error));
+    EXPECT_NE(error.find("ISO"), std::string::npos) << error;
 }
 
 TEST_F(ConfWriterDir, floppy_title_gets_no_cd_mount)
@@ -191,6 +210,7 @@ TEST_F(ConfWriterDir, conf_carries_no_mount_whitelist_keys)
 {
     // The whitelist keys are primary-config-only; writing them here
     // would be a misleading no-op.
+    addDownloadedFile("game.iso");
     for (const auto* type : {"floppyinstall", "isoinstall"}) {
         const auto game = parseOrDie(doomLikeToml("svga_s3", type));
         std::string error;
@@ -204,6 +224,7 @@ TEST_F(ConfWriterDir, conf_carries_no_mount_whitelist_keys)
 TEST_F(ConfWriterDir, every_autoexec_mount_path_stays_under_the_cache_base)
 {
     const auto game = parseOrDie(doomLikeToml("svga_s3", "isoinstall"));
+    addDownloadedFile("game.iso");
     std::string error;
     const auto conf = ConfWriter::renderConf(game, dir_, error);
     ASSERT_TRUE(conf) << error;
@@ -365,9 +386,11 @@ TEST_F(ConfWriterDir, write_refuses_a_missing_cache_base)
     EXPECT_FALSE(error.empty());
 }
 
-// The install conf is anchored in the extracts dir: the engine treats
-// the conf file's directory as an image root, which is what lets the
-// recipe's bare-name drive_swap("A", "disk2.ima") pass mount policy.
+// Floppy and exe install confs anchor in the extracts dir: the engine
+// treats the conf file's directory as an image root, which is what lets
+// the recipe's bare-name drive_swap("A", "disk2.ima") pass mount
+// policy. Iso install confs anchor at the cache base instead, so the
+// ISO can mount from downloads/ without ever being copied.
 class InstallConfDir : public ConfWriterDir {
 protected:
     void SetUp() override
@@ -391,7 +414,7 @@ TEST_F(InstallConfDir, install_conf_renders_the_same_engine_settings_as_play)
     const auto game = parseOrDie(doomLikeToml());
     addExtractedFile("disk1.ima");
     std::string error;
-    const auto conf = ConfWriter::renderInstallConf(game, extracts_, error);
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
     ASSERT_TRUE(conf) << error;
 
     EXPECT_TRUE(hasLine(*conf, "[sdl]"));
@@ -412,7 +435,7 @@ TEST_F(InstallConfDir, floppy_install_mounts_the_first_image_and_the_staging_dir
     addExtractedFile("disk1.ima");
     addExtractedFile("disk2.ima");
     std::string error;
-    const auto conf = ConfWriter::renderInstallConf(game, extracts_, error);
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
     ASSERT_TRUE(conf) << error;
 
     const auto image = (extracts_ / "disk1.ima").string();
@@ -431,7 +454,7 @@ TEST_F(InstallConfDir, floppy_images_are_picked_in_name_order_not_directory_orde
     addExtractedFile("disk2.ima");
     addExtractedFile("disk1.ima");
     std::string error;
-    const auto conf = ConfWriter::renderInstallConf(game, extracts_, error);
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
     ASSERT_TRUE(conf) << error;
     EXPECT_NE(conf->find("disk1.ima"), std::string::npos);
     EXPECT_EQ(conf->find("disk2.ima"), std::string::npos);
@@ -445,7 +468,7 @@ TEST_F(InstallConfDir, floppy_images_inside_a_subdirectory_are_found)
     std::filesystem::create_directories(extracts_ / "diskset");
     std::ofstream(extracts_ / "diskset" / "disk1.img", std::ios::binary) << "image";
     std::string error;
-    const auto conf = ConfWriter::renderInstallConf(game, extracts_, error);
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
     ASSERT_TRUE(conf) << error;
     EXPECT_NE(conf->find((extracts_ / "diskset" / "disk1.img").string()),
               std::string::npos);
@@ -456,7 +479,7 @@ TEST_F(InstallConfDir, floppy_image_extension_matching_ignores_case)
     const auto game = parseOrDie(doomLikeToml());
     addExtractedFile("GAME.IMG");
     std::string error;
-    const auto conf = ConfWriter::renderInstallConf(game, extracts_, error);
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
     ASSERT_TRUE(conf) << error;
     EXPECT_NE(conf->find("GAME.IMG"), std::string::npos);
 }
@@ -467,7 +490,7 @@ TEST_F(InstallConfDir, non_image_files_are_not_mounted_as_floppies)
     addExtractedFile("README.TXT");
     addExtractedFile("zzz.ima");
     std::string error;
-    const auto conf = ConfWriter::renderInstallConf(game, extracts_, error);
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
     ASSERT_TRUE(conf) << error;
     EXPECT_NE(conf->find("zzz.ima"), std::string::npos);
     EXPECT_EQ(conf->find("README.TXT"), std::string::npos);
@@ -478,20 +501,55 @@ TEST_F(InstallConfDir, floppy_install_without_any_floppy_image_is_refused)
     const auto game = parseOrDie(doomLikeToml());
     addExtractedFile("README.TXT");
     std::string error;
-    EXPECT_FALSE(ConfWriter::renderInstallConf(game, extracts_, error));
+    EXPECT_FALSE(ConfWriter::renderInstallConf(game, dir_, error));
     EXPECT_NE(error.find("floppy"), std::string::npos) << error;
 }
 
-TEST_F(InstallConfDir, cd_install_mounts_the_extracts_dir_as_cdrom)
+TEST_F(InstallConfDir, cd_install_mounts_the_downloaded_iso_image_and_the_staging_dir)
 {
     const auto game = parseOrDie(doomLikeToml("svga_s3", "isoinstall"));
+    addDownloadedFile("game.iso");
     std::string error;
-    const auto conf = ConfWriter::renderInstallConf(game, extracts_, error);
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
     ASSERT_TRUE(conf) << error;
 
-    EXPECT_TRUE(hasLine(*conf, "mount d \"" + extracts_.string() + "\" -t cdrom"));
+    const auto image = (dir_ / "downloads" / "doom" / "game.iso").string();
+    EXPECT_TRUE(hasLine(*conf, "mount d \"" + image + "\" -t cdrom"));
     EXPECT_TRUE(hasLine(*conf, "mount c \"" + (extracts_ / "installs").string() + "\""));
     EXPECT_EQ(conf->find("mount a"), std::string::npos);
+}
+
+TEST_F(InstallConfDir, cd_install_without_a_downloaded_iso_is_refused)
+{
+    const auto game = parseOrDie(doomLikeToml("svga_s3", "isoinstall"));
+    addDownloadedFile("README.TXT");
+    std::string error;
+    EXPECT_FALSE(ConfWriter::renderInstallConf(game, dir_, error));
+    EXPECT_NE(error.find("ISO"), std::string::npos) << error;
+}
+
+TEST_F(InstallConfDir, iso_images_are_picked_in_name_order_not_directory_order)
+{
+    const auto game = parseOrDie(doomLikeToml("svga_s3", "isoinstall"));
+    addDownloadedFile("disc2.iso");
+    addDownloadedFile("disc1.iso");
+    std::string error;
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
+    ASSERT_TRUE(conf) << error;
+    EXPECT_NE(conf->find("disc1.iso"), std::string::npos);
+    EXPECT_EQ(conf->find("disc2.iso"), std::string::npos);
+}
+
+TEST_F(InstallConfDir, iso_extension_matching_ignores_case_and_other_files)
+{
+    const auto game = parseOrDie(doomLikeToml("svga_s3", "isoinstall"));
+    addDownloadedFile("GAME.ISO");
+    addDownloadedFile("cover.jpg");
+    std::string error;
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
+    ASSERT_TRUE(conf) << error;
+    EXPECT_NE(conf->find("GAME.ISO"), std::string::npos);
+    EXPECT_EQ(conf->find("cover.jpg"), std::string::npos);
 }
 
 TEST_F(InstallConfDir, install_conf_neither_launches_the_game_nor_exits)
@@ -501,7 +559,7 @@ TEST_F(InstallConfDir, install_conf_neither_launches_the_game_nor_exits)
     const auto game = parseOrDie(doomLikeToml());
     addExtractedFile("disk1.ima");
     std::string error;
-    const auto conf = ConfWriter::renderInstallConf(game, extracts_, error);
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
     ASSERT_TRUE(conf) << error;
     EXPECT_EQ(conf->find("DOOM.EXE"), std::string::npos);
     EXPECT_EQ(conf->find("SETUP.EXE"), std::string::npos);
@@ -515,7 +573,7 @@ TEST_F(InstallConfDir, exe_install_mounts_the_extracts_dir_plain_and_the_staging
     // dir mounts plain, not as cdrom media.
     const auto game = parseOrDie(doomLikeToml("svga_s3", "exeinstall"));
     std::string error;
-    const auto conf = ConfWriter::renderInstallConf(game, extracts_, error);
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
     ASSERT_TRUE(conf) << error;
 
     EXPECT_TRUE(hasLine(*conf, "mount d \"" + extracts_.string() + "\""));
@@ -528,7 +586,7 @@ TEST_F(InstallConfDir, unzipinstall_mounts_like_an_exe_install)
 {
     const auto game = parseOrDie(doomLikeToml("svga_s3", "unzipinstall"));
     std::string error;
-    const auto conf = ConfWriter::renderInstallConf(game, extracts_, error);
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
     ASSERT_TRUE(conf) << error;
 
     EXPECT_TRUE(hasLine(*conf, "mount d \"" + extracts_.string() + "\""));
@@ -540,7 +598,7 @@ TEST_F(InstallConfDir, an_install_type_the_engine_does_not_drive_is_refused)
 {
     const auto game = parseOrDie(doomLikeToml("svga_s3", "unzip"));
     std::string error;
-    EXPECT_FALSE(ConfWriter::renderInstallConf(game, extracts_, error));
+    EXPECT_FALSE(ConfWriter::renderInstallConf(game, dir_, error));
     EXPECT_FALSE(error.empty());
 }
 
@@ -553,37 +611,44 @@ TEST_F(InstallConfDir, a_primary_source_without_an_install_type_is_refused)
     const auto game = parseOrDie(toml);
 
     std::string error;
-    EXPECT_FALSE(ConfWriter::renderInstallConf(game, extracts_, error));
+    EXPECT_FALSE(ConfWriter::renderInstallConf(game, dir_, error));
     EXPECT_NE(error.find("install type"), std::string::npos) << error;
 }
 
-TEST_F(InstallConfDir, refuses_a_relative_extracts_dir)
+TEST_F(InstallConfDir, refuses_a_relative_cache_base)
 {
     const auto game = parseOrDie(doomLikeToml());
     std::string error;
-    EXPECT_FALSE(ConfWriter::renderInstallConf(game, "extracts/doom", error));
+    EXPECT_FALSE(ConfWriter::renderInstallConf(game, "cache", error));
     EXPECT_FALSE(error.empty());
 }
 
-TEST_F(InstallConfDir, refuses_an_extracts_path_a_conf_line_cannot_carry)
+TEST_F(InstallConfDir, refuses_a_cache_base_a_conf_line_cannot_carry)
 {
     const auto game = parseOrDie(doomLikeToml());
     for (const auto* bad : {"with\"quote", "with\nnewline"}) {
         std::string error;
-        EXPECT_FALSE(ConfWriter::renderInstallConf(game, extracts_ / bad, error)) << bad;
+        EXPECT_FALSE(ConfWriter::renderInstallConf(game, dir_ / bad, error)) << bad;
         EXPECT_FALSE(error.empty());
     }
 }
 
-TEST_F(InstallConfDir, every_install_mount_path_stays_under_the_extracts_dir)
+TEST_F(InstallConfDir, every_install_mount_path_stays_under_its_conf_anchor)
 {
-    // The conf anchor is the only allowed root at runtime, so a mount
-    // outside the extracts dir would be dead on arrival.
-    for (const auto* type : {"floppyinstall", "isoinstall"}) {
+    // Whatever a conf mounts must sit under that conf's anchor, or the
+    // mount is dead on arrival at runtime: the extracts dir for floppy
+    // installs, the cache base for iso installs.
+    struct Case {
+        const char* type;
+        std::filesystem::path anchor;
+    };
+    for (const auto& [type, anchor] :
+         {Case{"floppyinstall", extracts_}, Case{"isoinstall", dir_}}) {
         const auto game = parseOrDie(doomLikeToml("svga_s3", type));
         addExtractedFile("disk1.ima");
+        addDownloadedFile("game.iso");
         std::string error;
-        const auto conf = ConfWriter::renderInstallConf(game, extracts_, error);
+        const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
         ASSERT_TRUE(conf) << error;
 
         for (const auto& line : lines(*conf)) {
@@ -595,11 +660,23 @@ TEST_F(InstallConfDir, every_install_mount_path_stays_under_the_extracts_dir)
             ASSERT_NE(open, std::string::npos) << line;
             ASSERT_GT(close, open) << line;
             const std::filesystem::path mounted = line.substr(open + 1, close - open - 1);
-            auto rel = mounted.lexically_relative(extracts_);
+            auto rel = mounted.lexically_relative(anchor);
             EXPECT_FALSE(rel.empty()) << line;
             EXPECT_NE(rel.begin()->string(), "..") << line;
         }
     }
+}
+
+TEST_F(InstallConfDir, write_lands_the_iso_install_conf_at_the_cache_base)
+{
+    // The anchor must cover the ISO in downloads/, which the extracts
+    // dir never does.
+    const auto game = parseOrDie(doomLikeToml("svga_s3", "isoinstall"));
+    addDownloadedFile("game.iso");
+    std::string error;
+    const auto written = ConfWriter::writeInstallConf(game, dir_, error);
+    ASSERT_TRUE(written) << error;
+    EXPECT_EQ(*written, dir_ / "install.conf");
 }
 
 TEST_F(InstallConfDir, write_lands_the_install_conf_inside_the_extracts_dir)
@@ -609,7 +686,7 @@ TEST_F(InstallConfDir, write_lands_the_install_conf_inside_the_extracts_dir)
     const auto game = parseOrDie(doomLikeToml());
     addExtractedFile("disk1.ima");
     std::string error;
-    const auto written = ConfWriter::writeInstallConf(game, extracts_, error);
+    const auto written = ConfWriter::writeInstallConf(game, dir_, error);
     ASSERT_TRUE(written) << error;
     EXPECT_EQ(*written, extracts_ / "install.conf");
     ASSERT_TRUE(std::filesystem::exists(*written));
@@ -617,7 +694,7 @@ TEST_F(InstallConfDir, write_lands_the_install_conf_inside_the_extracts_dir)
     std::ifstream in(*written, std::ios::binary);
     std::string on_disk((std::istreambuf_iterator<char>(in)),
                         std::istreambuf_iterator<char>());
-    const auto rendered = ConfWriter::renderInstallConf(game, extracts_, error);
+    const auto rendered = ConfWriter::renderInstallConf(game, dir_, error);
     ASSERT_TRUE(rendered) << error;
     EXPECT_EQ(on_disk, *rendered);
 }
@@ -627,7 +704,7 @@ TEST_F(InstallConfDir, written_install_conf_is_private_and_leaves_no_temp_files)
     const auto game = parseOrDie(doomLikeToml());
     addExtractedFile("disk1.ima");
     std::string error;
-    const auto written = ConfWriter::writeInstallConf(game, extracts_, error);
+    const auto written = ConfWriter::writeInstallConf(game, dir_, error);
     ASSERT_TRUE(written) << error;
 
     const auto mode = std::filesystem::status(*written).permissions();
@@ -653,7 +730,7 @@ TEST_F(InstallConfDir, write_replaces_an_existing_install_conf)
         stale << "stale contents from a previous install\n";
     }
     std::string error;
-    const auto written = ConfWriter::writeInstallConf(game, extracts_, error);
+    const auto written = ConfWriter::writeInstallConf(game, dir_, error);
     ASSERT_TRUE(written) << error;
 
     std::ifstream in(*written, std::ios::binary);
@@ -663,11 +740,11 @@ TEST_F(InstallConfDir, write_replaces_an_existing_install_conf)
     EXPECT_NE(on_disk.find("[autoexec]"), std::string::npos);
 }
 
-TEST_F(InstallConfDir, write_refuses_a_missing_extracts_dir)
+TEST_F(InstallConfDir, write_refuses_a_missing_cache_base)
 {
     const auto game = parseOrDie(doomLikeToml());
     std::string error;
-    EXPECT_FALSE(ConfWriter::writeInstallConf(game, extracts_ / "missing", error));
+    EXPECT_FALSE(ConfWriter::writeInstallConf(game, dir_ / "missing", error));
     EXPECT_FALSE(error.empty());
 }
 

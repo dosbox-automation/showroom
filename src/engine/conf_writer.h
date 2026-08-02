@@ -33,19 +33,28 @@ public:
 
     // Install mode: mounts only, no launch, no exit - the recipe types
     // the installer invocation and controls shutdown. C: is a staging
-    // dir under the extracts dir because without a primary config the
-    // conf anchor is the engine's only allowed mount root; the runner
-    // moves the staged result into installs/<slug> after verification.
+    // dir under the extracts dir; the runner moves the staged result
+    // into installs/<slug> after verification.
     static std::optional<std::string> renderInstallConf(
-            const GameDefinition& game, const std::filesystem::path& extracts_dir,
+            const GameDefinition& game, const std::filesystem::path& cache_base,
             std::string& error);
 
-    // Lands at <extracts_dir>/install.conf: the conf's directory is an
-    // image root, which is what lets the recipe's bare-name drive_swap
-    // pass mount policy.
+    // Floppy and exe install confs land in the extracts dir: the
+    // conf's directory is an image root, which is what lets the
+    // recipe's bare-name drive_swap pass mount policy. Iso install
+    // confs land at the cache base instead - the anchor must cover the
+    // ISO, which stays in downloads/ and is never copied.
     static std::optional<std::filesystem::path> writeInstallConf(
-            const GameDefinition& game, const std::filesystem::path& extracts_dir,
+            const GameDefinition& game, const std::filesystem::path& cache_base,
             std::string& error);
+
+    // Where an archive-based install unpacks; iso installs have no
+    // extraction and mount the download directly.
+    static std::filesystem::path extractsDir(const std::filesystem::path& cache_base,
+                                             const std::string& slug)
+    {
+        return cache_base / "extracts" / slug;
+    }
 
     // The staging dir renderInstallConf mounts as C:.
     static std::filesystem::path installStagingDir(

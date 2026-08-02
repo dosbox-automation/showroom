@@ -374,6 +374,29 @@ TEST_F(InstallRunnerFixture, a_populated_extracts_dir_skips_extraction)
     EXPECT_EQ(extractor_.calls, 0);
 }
 
+TEST_F(InstallRunnerFixture, an_iso_install_mounts_in_place_and_never_extracts)
+{
+    // The CD image is the medium: it stays in downloads/ and the
+    // install conf anchors at the cache base to reach it.
+    std::ofstream(cache_ / "downloads" / "doom" / "game.iso") << "iso bytes";
+    server_.queueScriptStatus(
+            R"({"state":"completed","output":{"install_complete":"yes"}})");
+
+    QSignalSpy succeeded(runner_.get(), &InstallRunner::succeeded);
+    std::string error;
+    ASSERT_TRUE(
+            runner_->startInstall(installableGame(30, "isoinstall", "game.iso"), error))
+            << error;
+    plantStagedResult();
+
+    ASSERT_TRUE(pumpUntil(succeeded, 20000));
+    EXPECT_EQ(extractor_.calls, 0);
+    EXPECT_TRUE(fs::is_regular_file(cache_ / "install.conf"));
+    EXPECT_TRUE(fs::is_regular_file(cache_ / "downloads" / "doom" / "game.iso"));
+    EXPECT_TRUE(fs::is_regular_file(cache_ / "installs" / "doom" / "GOLD" / "DOOM"
+                                    / "DOOM.EXE"));
+}
+
 TEST_F(InstallRunnerFixture, an_exe_install_copies_the_installer_into_extracts_untouched)
 {
     // The self-extractor runs inside the machine; the host-side

@@ -146,13 +146,19 @@ void renderEngineSettings(const GameDefinition& game, std::ostringstream& conf)
          << "webserver_port = " << kShowroomEnginePort << "\n\n";
 }
 
-bool isFloppyImageName(const std::filesystem::path& name)
+bool hasAnyExtension(const std::filesystem::path& name,
+                     std::initializer_list<std::string_view> wanted)
 {
     auto ext = name.extension().string();
     std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) {
         return static_cast<char>(std::tolower(c));
     });
-    return ext == ".ima" || ext == ".img";
+    return std::find(wanted.begin(), wanted.end(), ext) != wanted.end();
+}
+
+bool isFloppyImageName(const std::filesystem::path& name)
+{
+    return hasAnyExtension(name, {".ima", ".img"});
 }
 
 std::optional<std::filesystem::path> firstFloppyImage(
@@ -174,6 +180,30 @@ std::optional<std::filesystem::path> firstFloppyImage(
     }
     if (images.empty()) {
         error = "no floppy image in " + extracts_dir.string();
+        return std::nullopt;
+    }
+    return *std::min_element(images.begin(), images.end());
+}
+
+std::optional<std::filesystem::path> firstIsoImage(
+        const std::filesystem::path& downloads_dir, std::string& error)
+{
+    std::error_code ec;
+    std::vector<std::filesystem::path> images;
+    if (std::filesystem::is_directory(downloads_dir, ec)) {
+        for (const auto& entry : std::filesystem::directory_iterator(downloads_dir, ec)) {
+            if (entry.is_regular_file(ec)
+                && hasAnyExtension(entry.path().filename(), {".iso"})) {
+                images.push_back(entry.path());
+            }
+        }
+        if (ec) {
+            error = "cannot scan downloads dir: " + ec.message();
+            return std::nullopt;
+        }
+    }
+    if (images.empty()) {
+        error = "no ISO image in " + downloads_dir.string();
         return std::nullopt;
     }
     return *std::min_element(images.begin(), images.end());
@@ -251,8 +281,11 @@ std::optional<std::string> ConfWriter::renderConf(const GameDefinition& game,
     // and one tile cannot see another's files.
     conf << "mount c \"" << (cache_base / "installs" / game.slug()).string() << "\"\n";
     if (wantsCdDrive(game)) {
-        conf << "mount d \"" << (cache_base / "downloads" / game.slug()).string()
-             << "\" -t cdrom\n";
+        const auto image = firstIsoImage(cache_base / "downloads" / game.slug(), error);
+        if (!image) {
+            return std::nullopt;
+        }
+        conf << "mount d \"" << image->string() << "\" -t cdrom\n";
     }
     conf << "c:\n";
     if (!game.launch().working_dir.empty()) {
@@ -276,11 +309,11 @@ std::optional<std::filesystem::path> ConfWriter::writeConf(
 }
 
 std::optional<std::string> ConfWriter::renderInstallConf(
-        const GameDefinition& game, const std::filesystem::path& extracts_dir,
+        const GameDefinition& game, const std::filesystem::path& cache_base,
         std::string& error)
 {
     error.clear();
-    if (!validateConfDir(extracts_dir, "extracts dir", error)) {
+    if (!validateConfDir(cache_base, "cache base", error)) {
         return std::nullopt;
     }
     if (!validateEngineSettings(game, error)) {
@@ -301,6 +334,7 @@ std::optional<std::string> ConfWriter::renderInstallConf(
         return std::nullopt;
     }
 
+    const auto extracts_dir = extractsDir(cache_base, game.slug());
     std::ostringstream conf;
     renderEngineSettings(game, conf);
 
@@ -312,7 +346,11 @@ std::optional<std::string> ConfWriter::renderInstallConf(
         }
         conf << "mount a \"" << image->string() << "\" -t floppy\n";
     } else if (*install_type == InstallType::IsoInstall) {
-        conf << "mount d \"" << extracts_dir.string() << "\" -t cdrom\n";
+        const auto image = firstIsoImage(cache_base / "downloads" / game.slug(), error);
+        if (!image) {
+            return std::nullopt;
+        }
+        conf << "mount d \"" << image->string() << "\" -t cdrom\n";
     } else {
         // Self-extractors and unzipped installers are DOS programs run
         // from D:, not media.
@@ -324,14 +362,16 @@ std::optional<std::string> ConfWriter::renderInstallConf(
 }
 
 std::optional<std::filesystem::path> ConfWriter::writeInstallConf(
-        const GameDefinition& game, const std::filesystem::path& extracts_dir,
+        const GameDefinition& game, const std::filesystem::path& cache_base,
         std::string& error)
 {
-    const auto conf = renderInstallConf(game, extracts_dir, error);
+    const auto conf = renderInstallConf(game, cache_base, error);
     if (!conf) {
         return std::nullopt;
     }
-    return writeConfFile(extracts_dir, "install.conf", *conf, error);
+    const auto target_dir = wantsCdDrive(game) ? cache_base
+                                               : extractsDir(cache_base, game.slug());
+    return writeConfFile(target_dir, "install.conf", *conf, error);
 }
 
 } // namespace showroom
