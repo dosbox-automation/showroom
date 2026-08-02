@@ -291,9 +291,7 @@ std::optional<std::string> ConfWriter::renderInstallConf(
         error = "primary source of \"" + game.slug() + "\" has no install type";
         return std::nullopt;
     }
-    if (*install_type != InstallType::FloppyInstall
-        && *install_type != InstallType::IsoInstall
-        && *install_type != InstallType::ExeInstall) {
+    if (*install_type == InstallType::Unzip) {
         error = "install type of \"" + game.slug()
               + "\" is not driven through the engine";
         return std::nullopt;
@@ -312,7 +310,8 @@ std::optional<std::string> ConfWriter::renderInstallConf(
     } else if (*install_type == InstallType::IsoInstall) {
         conf << "mount d \"" << extracts_dir.string() << "\" -t cdrom\n";
     } else {
-        // The self-extractor is a DOS program run from D:, not media.
+        // Self-extractors and unzipped installers are DOS programs run
+        // from D:, not media.
         conf << "mount d \"" << extracts_dir.string() << "\"\n";
     }
     conf << "mount c \"" << installStagingDir(extracts_dir).string() << "\"\n";

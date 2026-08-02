@@ -163,17 +163,26 @@ public:
     {
         ++calls;
         last_archive = archive;
+        last_destination = destination;
         if (fail) {
             return {false, "planted failure"};
         }
         fs::create_directories(destination);
-        std::ofstream(destination / "disk1.ima") << "image";
+        if (plant_install) {
+            fs::create_directories(destination / "GOLD" / "DOOM");
+            std::ofstream(destination / "GOLD" / "DOOM" / "DOOM.EXE") << "12345";
+        } else {
+            std::ofstream(destination / "disk1.ima") << "image";
+        }
         return {true, ""};
     }
 
     mutable int calls = 0;
     mutable fs::path last_archive;
+    mutable fs::path last_destination;
     bool fail = false;
+    // Plain-archive installs unpack the finished game, not disk images.
+    bool plant_install = false;
 };
 
 class InstallRunnerFixture : public ::testing::Test {
@@ -387,6 +396,55 @@ TEST_F(InstallRunnerFixture, an_exe_install_copies_the_installer_into_extracts_u
     const auto copied = cache_ / "extracts" / "doom" / "INSTALL.EXE";
     ASSERT_TRUE(fs::is_regular_file(copied));
     EXPECT_EQ(fs::last_write_time(copied), planted);
+}
+
+TEST_F(InstallRunnerFixture, a_plain_archive_installs_without_engine_or_recipe)
+{
+    fs::remove(games_ / "doom" / "recipe.lua");
+    extractor_.plant_install = true;
+
+    QSignalSpy succeeded(runner_.get(), &InstallRunner::succeeded);
+    std::string error;
+    ASSERT_TRUE(runner_->startInstall(installableGame(30, "unzip"), error)) << error;
+    EXPECT_TRUE(runner_->isRunning());
+
+    ASSERT_TRUE(pumpUntil(succeeded, 20000));
+    EXPECT_FALSE(runner_->isRunning());
+    EXPECT_EQ(extractor_.calls, 1);
+    EXPECT_EQ(extractor_.last_destination, stagingDir());
+    EXPECT_TRUE(fs::is_regular_file(cache_ / "installs" / "doom" / "GOLD" / "DOOM"
+                                    / "DOOM.EXE"));
+    EXPECT_FALSE(fs::exists(stagingDir()));
+    EXPECT_EQ(server_.shutdownRequests(), 0);
+}
+
+TEST_F(InstallRunnerFixture, the_overlay_lands_on_top_of_a_plain_archive_install)
+{
+    extractor_.plant_install = true;
+    const auto overlay = games_ / "doom" / "overlay" / "GOLD" / "DOOM";
+    fs::create_directories(overlay);
+    std::ofstream(overlay / "SOUND.CFG") << "sb16";
+
+    QSignalSpy succeeded(runner_.get(), &InstallRunner::succeeded);
+    std::string error;
+    ASSERT_TRUE(runner_->startInstall(installableGame(30, "unzip"), error)) << error;
+
+    ASSERT_TRUE(pumpUntil(succeeded, 20000));
+    EXPECT_TRUE(fs::is_regular_file(cache_ / "installs" / "doom" / "GOLD" / "DOOM"
+                                    / "SOUND.CFG"));
+}
+
+TEST_F(InstallRunnerFixture, a_failed_plain_archive_extraction_rolls_back)
+{
+    extractor_.fail = true;
+    QSignalSpy failed(runner_.get(), &InstallRunner::failed);
+    std::string error;
+    ASSERT_TRUE(runner_->startInstall(installableGame(30, "unzip"), error)) << error;
+
+    ASSERT_TRUE(pumpUntil(failed, 20000));
+    EXPECT_TRUE(failed.front().at(1).toString().contains("extraction failed"));
+    EXPECT_FALSE(fs::exists(stagingDir()));
+    EXPECT_TRUE(fs::exists(cache_ / "downloads" / "doom" / "doom.7z"));
 }
 
 TEST_F(InstallRunnerFixture, refuses_a_game_without_a_recipe_file)

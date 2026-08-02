@@ -51,8 +51,10 @@ signals:
 
 private:
     // Starting covers the engine's webserver boot: status probes retry
-    // until one answers, then the recipe is loaded and started.
-    enum class Phase { Idle, Starting, Polling, Stopping };
+    // until one answers, then the recipe is loaded and started. Direct
+    // is the no-engine path: plain archives whose extraction is the
+    // whole install.
+    enum class Phase { Idle, Starting, Polling, Stopping, Direct };
 
     static constexpr int kPollIntervalMs = 1000;
     // Headroom on top of max_runtime_seconds for the engine boot and
@@ -60,6 +62,7 @@ private:
     static constexpr int kEngineStartBudgetMs = 15000;
     static constexpr int kMaxConsecutivePollFailures = 5;
 
+    void runDirectInstall();
     void onPollTick();
     void beginScript();
     void handleScriptStatus(const ApiClient::Response& response);
@@ -84,6 +87,7 @@ private:
     // Optional because GameDefinition only exists parsed and validated.
     std::optional<GameDefinition> game_;
     QString slug_;
+    std::filesystem::path archive_;
     std::filesystem::path extracts_dir_;
     std::filesystem::path staging_dir_;
     QByteArray recipe_;

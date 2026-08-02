@@ -70,6 +70,48 @@ ExtractResult copySelfExtractor(const std::filesystem::path& exe,
     return {true, ""};
 }
 
+// The showroom's own config artifacts (a game's known-good sound
+// config, captured once in a probe) land on top of the extracted
+// files. Missing overlay dir is the common case and a no-op.
+bool copyOverlay(const std::filesystem::path& overlay,
+                 const std::filesystem::path& staging, std::string& error)
+{
+    std::error_code ec;
+    if (!std::filesystem::is_directory(overlay, ec)) {
+        return true;
+    }
+    for (auto it = std::filesystem::recursive_directory_iterator(overlay, ec);
+         !ec && it != std::filesystem::recursive_directory_iterator();
+         ++it) {
+        const auto target = staging / it->path().lexically_relative(overlay);
+        if (it->is_directory()) {
+            std::filesystem::create_directories(target, ec);
+        } else if (it->is_regular_file()) {
+            const auto stamp = std::filesystem::last_write_time(it->path(), ec);
+            std::filesystem::create_directories(target.parent_path(), ec);
+            std::filesystem::copy_file(it->path(),
+                                       target,
+                                       std::filesystem::copy_options::overwrite_existing,
+                                       ec);
+            if (!ec) {
+                std::filesystem::last_write_time(target, stamp, ec);
+            }
+        } else {
+            error = "overlay entry is neither file nor directory: " + it->path().string();
+            return false;
+        }
+        if (ec) {
+            error = "overlay copy failed at " + it->path().string() + ": " + ec.message();
+            return false;
+        }
+    }
+    if (ec) {
+        error = "overlay walk failed: " + ec.message();
+        return false;
+    }
+    return true;
+}
+
 } // namespace
 
 InstallRunner::InstallRunner(std::filesystem::path engine_binary,
@@ -122,6 +164,48 @@ bool InstallRunner::startInstall(const GameDefinition& game, std::string& error)
         return false;
     }
 
+    const auto plan = downloadPlanFor(game);
+    if (!plan) {
+        error = "game \"" + game.slug() + "\" has no usable download source";
+        return false;
+    }
+    archive_ = cache_base_ / "downloads" / game.slug() / plan->filename;
+    std::error_code ec;
+    if (!std::filesystem::is_regular_file(archive_, ec)) {
+        error = "downloaded archive not found: " + archive_.string();
+        return false;
+    }
+
+    const auto extracts_base = cache_base_ / "extracts";
+    extracts_dir_ = extracts_base / game.slug();
+    if (!isWithin(extracts_base, extracts_dir_)) {
+        error = "extracts dir escapes the cache";
+        return false;
+    }
+    staging_dir_ = ConfWriter::installStagingDir(extracts_dir_);
+    if (!isWithin(extracts_dir_, staging_dir_)) {
+        error = "staging dir escapes the extracts dir";
+        return false;
+    }
+
+    if (game.sources().front().install_type == InstallType::Unzip) {
+        // Extraction is the whole install: no engine, no recipe. The
+        // archive unpacks straight into staging, then the shared
+        // verify-and-promote path takes over on the next loop turn.
+        std::filesystem::remove_all(staging_dir_, ec);
+        if (!std::filesystem::create_directories(staging_dir_, ec) || ec) {
+            error = "cannot create staging dir: " + staging_dir_.string();
+            return false;
+        }
+        game_ = game;
+        slug_ = QString::fromStdString(game.slug());
+        phase_ = Phase::Direct;
+        pending_failure_.clear();
+        QTimer::singleShot(0, this, &InstallRunner::runDirectInstall);
+        log_info(kLogComponent, "%s: direct install started", qPrintable(slug_));
+        return true;
+    }
+
     const auto recipe_path = games_dir_ / game.slug() / "recipe.lua";
     QFile recipe_file(QString::fromStdString(recipe_path.string()));
     if (!recipe_file.open(QIODevice::ReadOnly)) {
@@ -134,32 +218,14 @@ bool InstallRunner::startInstall(const GameDefinition& game, std::string& error)
         return false;
     }
 
-    const auto plan = downloadPlanFor(game);
-    if (!plan) {
-        error = "game \"" + game.slug() + "\" has no usable download source";
-        return false;
-    }
-    const auto archive = cache_base_ / "downloads" / game.slug() / plan->filename;
-    std::error_code ec;
-    if (!std::filesystem::is_regular_file(archive, ec)) {
-        error = "downloaded archive not found: " + archive.string();
-        return false;
-    }
-
-    const auto extracts_base = cache_base_ / "extracts";
-    extracts_dir_ = extracts_base / game.slug();
-    if (!isWithin(extracts_base, extracts_dir_)) {
-        error = "extracts dir escapes the cache";
-        return false;
-    }
     const bool extracted = std::filesystem::is_directory(extracts_dir_, ec)
                         && std::filesystem::directory_iterator(extracts_dir_, ec)
                                    != std::filesystem::directory_iterator();
     if (!extracted) {
         const auto result = game.sources().front().install_type == InstallType::ExeInstall
-                                  ? copySelfExtractor(archive,
+                                  ? copySelfExtractor(archive_,
                                                       extracts_dir_ / plan->filename)
-                                  : extractor_.extract(archive, extracts_dir_);
+                                  : extractor_.extract(archive_, extracts_dir_);
         if (!result.ok) {
             // A partial extraction would pass the non-empty check next
             // time and skip extraction against broken contents.
@@ -169,11 +235,6 @@ bool InstallRunner::startInstall(const GameDefinition& game, std::string& error)
         }
     }
 
-    staging_dir_ = ConfWriter::installStagingDir(extracts_dir_);
-    if (!isWithin(extracts_dir_, staging_dir_)) {
-        error = "staging dir escapes the extracts dir";
-        return false;
-    }
     std::filesystem::remove_all(staging_dir_, ec);
     if (!std::filesystem::create_directories(staging_dir_, ec) || ec) {
         error = "cannot create staging dir: " + staging_dir_.string();
@@ -222,6 +283,26 @@ QString InstallRunner::installingSlug() const
 void InstallRunner::setStopTimeouts(int graceful_ms, int terminate_ms)
 {
     engine_.setStopTimeouts(graceful_ms, terminate_ms);
+}
+
+void InstallRunner::runDirectInstall()
+{
+    if (phase_ != Phase::Direct) {
+        return;
+    }
+    const auto result = extractor_.extract(archive_, staging_dir_);
+    if (!result.ok) {
+        failInstall("extraction failed: " + QString::fromStdString(result.error));
+        return;
+    }
+    std::string overlay_error;
+    if (!copyOverlay(games_dir_ / game_->slug() / "overlay",
+                     staging_dir_,
+                     overlay_error)) {
+        failInstall(QString::fromStdString(overlay_error));
+        return;
+    }
+    verifyAndPromote();
 }
 
 void InstallRunner::onPollTick()

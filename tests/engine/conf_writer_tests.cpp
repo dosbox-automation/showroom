@@ -510,14 +510,24 @@ TEST_F(InstallConfDir, exe_install_mounts_the_extracts_dir_plain_and_the_staging
     EXPECT_EQ(conf->find("mount a"), std::string::npos);
 }
 
+TEST_F(InstallConfDir, unzipinstall_mounts_like_an_exe_install)
+{
+    const auto game = parseOrDie(doomLikeToml("svga_s3", "unzipinstall"));
+    std::string error;
+    const auto conf = ConfWriter::renderInstallConf(game, extracts_, error);
+    ASSERT_TRUE(conf) << error;
+
+    EXPECT_TRUE(hasLine(*conf, "mount d \"" + extracts_.string() + "\""));
+    EXPECT_TRUE(hasLine(*conf, "mount c \"" + (extracts_ / "installs").string() + "\""));
+    EXPECT_EQ(conf->find("-t cdrom"), std::string::npos);
+}
+
 TEST_F(InstallConfDir, an_install_type_the_engine_does_not_drive_is_refused)
 {
-    for (const auto* type : {"unzip", "unzipinstall"}) {
-        const auto game = parseOrDie(doomLikeToml("svga_s3", type));
-        std::string error;
-        EXPECT_FALSE(ConfWriter::renderInstallConf(game, extracts_, error)) << type;
-        EXPECT_FALSE(error.empty()) << type;
-    }
+    const auto game = parseOrDie(doomLikeToml("svga_s3", "unzip"));
+    std::string error;
+    EXPECT_FALSE(ConfWriter::renderInstallConf(game, extracts_, error));
+    EXPECT_FALSE(error.empty());
 }
 
 TEST_F(InstallConfDir, a_primary_source_without_an_install_type_is_refused)
