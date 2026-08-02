@@ -16,6 +16,7 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 
+#include <chrono>
 #include <cstdlib>
 #include <filesystem>
 #include <format>
@@ -29,7 +30,9 @@ namespace {
 
 namespace fs = std::filesystem;
 
-GameDefinition installableGame(int max_runtime_seconds = 30)
+GameDefinition installableGame(int max_runtime_seconds = 30,
+                               const std::string& install_type = "floppyinstall",
+                               const std::string& archive = "doom.7z")
 {
     const std::string toml = std::format(R"(slug = "doom"
 title = "DOOM"
@@ -39,8 +42,8 @@ recipe_status = "done"
 
 [sources.primary]
 role = "primary"
-install_type = "floppyinstall"
-url = "https://example.org/doom.7z"
+install_type = "{}"
+url = "https://example.org/{}"
 
 [dosbox]
 machine = "svga_s3"
@@ -57,6 +60,8 @@ max_runtime_seconds = {}
 [install.expected_files]
 "GOLD/DOOM/DOOM.EXE" = {{ size = 5 }}
 )",
+                                         install_type,
+                                         archive,
                                          max_runtime_seconds);
     std::string error;
     const auto game = GameDefinition::fromTomlString(toml, error);
@@ -358,6 +363,30 @@ TEST_F(InstallRunnerFixture, a_populated_extracts_dir_skips_extraction)
 
     ASSERT_TRUE(pumpUntil(succeeded, 20000));
     EXPECT_EQ(extractor_.calls, 0);
+}
+
+TEST_F(InstallRunnerFixture, an_exe_install_copies_the_installer_into_extracts_untouched)
+{
+    // The self-extractor runs inside the machine; the host-side
+    // "extraction" is a copy, timestamp kept, libarchive never called.
+    std::ofstream(cache_ / "downloads" / "doom" / "INSTALL.EXE") << "MZ";
+    const auto planted = fs::file_time_type::clock::now() - std::chrono::hours(24);
+    fs::last_write_time(cache_ / "downloads" / "doom" / "INSTALL.EXE", planted);
+    server_.queueScriptStatus(
+            R"({"state":"completed","output":{"install_complete":"yes"}})");
+
+    QSignalSpy succeeded(runner_.get(), &InstallRunner::succeeded);
+    std::string error;
+    ASSERT_TRUE(runner_->startInstall(installableGame(30, "exeinstall", "INSTALL.EXE"),
+                                      error))
+            << error;
+    plantStagedResult();
+
+    ASSERT_TRUE(pumpUntil(succeeded, 20000));
+    EXPECT_EQ(extractor_.calls, 0);
+    const auto copied = cache_ / "extracts" / "doom" / "INSTALL.EXE";
+    ASSERT_TRUE(fs::is_regular_file(copied));
+    EXPECT_EQ(fs::last_write_time(copied), planted);
 }
 
 TEST_F(InstallRunnerFixture, refuses_a_game_without_a_recipe_file)

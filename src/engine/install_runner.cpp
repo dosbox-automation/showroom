@@ -41,6 +41,35 @@ std::optional<int> progressFromOutput(const QJsonObject& output)
     return std::nullopt;
 }
 
+// A self-extractor is a DOS program the host cannot unpack; it runs
+// inside the machine, so preparing the extracts dir is a copy with the
+// installer's timestamp kept.
+ExtractResult copySelfExtractor(const std::filesystem::path& exe,
+                                const std::filesystem::path& destination)
+{
+    std::error_code ec;
+    std::filesystem::create_directories(destination.parent_path(), ec);
+    if (ec) {
+        return {false, "cannot create extracts dir: " + ec.message()};
+    }
+    const auto stamp = std::filesystem::last_write_time(exe, ec);
+    if (ec) {
+        return {false, "cannot read installer timestamp: " + ec.message()};
+    }
+    std::filesystem::copy_file(exe,
+                               destination,
+                               std::filesystem::copy_options::overwrite_existing,
+                               ec);
+    if (ec) {
+        return {false, "cannot copy installer: " + ec.message()};
+    }
+    std::filesystem::last_write_time(destination, stamp, ec);
+    if (ec) {
+        return {false, "cannot restore installer timestamp: " + ec.message()};
+    }
+    return {true, ""};
+}
+
 } // namespace
 
 InstallRunner::InstallRunner(std::filesystem::path engine_binary,
@@ -127,7 +156,10 @@ bool InstallRunner::startInstall(const GameDefinition& game, std::string& error)
                         && std::filesystem::directory_iterator(extracts_dir_, ec)
                                    != std::filesystem::directory_iterator();
     if (!extracted) {
-        const auto result = extractor_.extract(archive, extracts_dir_);
+        const auto result = game.sources().front().install_type == InstallType::ExeInstall
+                                  ? copySelfExtractor(archive,
+                                                      extracts_dir_ / plan->filename)
+                                  : extractor_.extract(archive, extracts_dir_);
         if (!result.ok) {
             // A partial extraction would pass the non-empty check next
             // time and skip extraction against broken contents.

@@ -292,7 +292,8 @@ std::optional<std::string> ConfWriter::renderInstallConf(
         return std::nullopt;
     }
     if (*install_type != InstallType::FloppyInstall
-        && *install_type != InstallType::IsoInstall) {
+        && *install_type != InstallType::IsoInstall
+        && *install_type != InstallType::ExeInstall) {
         error = "install type of \"" + game.slug()
               + "\" is not driven through the engine";
         return std::nullopt;
@@ -308,8 +309,11 @@ std::optional<std::string> ConfWriter::renderInstallConf(
             return std::nullopt;
         }
         conf << "mount a \"" << image->string() << "\" -t floppy\n";
-    } else {
+    } else if (*install_type == InstallType::IsoInstall) {
         conf << "mount d \"" << extracts_dir.string() << "\" -t cdrom\n";
+    } else {
+        // The self-extractor is a DOS program run from D:, not media.
+        conf << "mount d \"" << extracts_dir.string() << "\"\n";
     }
     conf << "mount c \"" << installStagingDir(extracts_dir).string() << "\"\n";
 
