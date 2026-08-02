@@ -6,6 +6,8 @@
 
 #include "imported/log.h"
 
+#include <algorithm>
+#include <cctype>
 #include <system_error>
 
 namespace showroom {
@@ -49,6 +51,28 @@ std::vector<std::string> verifyInstall(const GameDefinition& game,
         return {};
     }
     return installDamage(game, install_dir);
+}
+
+std::vector<std::string> mediaDamage(const GameDefinition& game,
+                                     const std::filesystem::path& downloads_dir)
+{
+    if (!game.wantsCdDrive()) {
+        return {};
+    }
+    std::error_code ec;
+    for (const auto& entry : std::filesystem::directory_iterator(downloads_dir, ec)) {
+        if (!entry.is_regular_file(ec)) {
+            continue;
+        }
+        auto ext = entry.path().extension().string();
+        std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) {
+            return static_cast<char>(std::tolower(c));
+        });
+        if (ext == ".iso") {
+            return {};
+        }
+    }
+    return {"no ISO image in " + downloads_dir.string()};
 }
 
 } // namespace showroom

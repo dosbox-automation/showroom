@@ -95,6 +95,13 @@ public:
     // is shown, the Play button is not offered.
     bool isLaunchable() const { return !launch_.executable.empty(); }
 
+    // CD titles keep D: mounted at play time and need their ISO on disk.
+    bool wantsCdDrive() const
+    {
+        return !sources_.empty()
+            && sources_.front().install_type == InstallType::IsoInstall;
+    }
+
 private:
     GameDefinition() = default;
 

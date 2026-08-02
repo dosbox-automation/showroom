@@ -159,6 +159,55 @@ TEST_F(InstallCheckDir, a_directory_where_a_file_is_expected_is_damage)
     EXPECT_EQ(installDamage(game, dir_).size(), 1u);
 }
 
+std::string gameWithInstallType(const std::string& install_type)
+{
+    return "slug = \"probe\"\n"
+           "title = \"Probe\"\n"
+           "rank = 1\n"
+           "license = \"shareware\"\n"
+           "[sources.primary]\n"
+           "install_type = \""
+         + install_type
+         + "\"\n"
+           "url = \"https://example.invalid/probe.iso\"\n"
+           "[dosbox]\n"
+           "machine = \"svga_s3\"\n"
+           "cpu_cycles = 3000\n"
+           "cpu_cycles_protected = 3000\n"
+           "[launch]\n"
+           "executable = \"PROBE.EXE\"\n"
+           "[install]\n"
+           "max_runtime_seconds = 60\n";
+}
+
+TEST_F(InstallCheckDir, a_cd_game_with_its_iso_reports_no_media_damage)
+{
+    const auto game = parseOrDie(gameWithInstallType("isoinstall"));
+    writeBytes(dir_ / "probe.iso", 4);
+    EXPECT_TRUE(mediaDamage(game, dir_).empty());
+}
+
+TEST_F(InstallCheckDir, a_cd_game_without_its_iso_reports_media_damage)
+{
+    const auto game = parseOrDie(gameWithInstallType("isoinstall"));
+    writeBytes(dir_ / "README.TXT", 4);
+    const auto damage = mediaDamage(game, dir_);
+    ASSERT_EQ(damage.size(), 1u);
+    EXPECT_NE(damage.front().find("ISO"), std::string::npos);
+}
+
+TEST_F(InstallCheckDir, a_missing_downloads_dir_counts_as_missing_media)
+{
+    const auto game = parseOrDie(gameWithInstallType("isoinstall"));
+    EXPECT_EQ(mediaDamage(game, dir_ / "never-created").size(), 1u);
+}
+
+TEST_F(InstallCheckDir, a_non_cd_game_needs_no_media)
+{
+    const auto game = parseOrDie(gameWithInstallType("floppyinstall"));
+    EXPECT_TRUE(mediaDamage(game, dir_).empty());
+}
+
 class VerifyInstallDir : public InstallCheckDir {
 protected:
     void SetUp() override

@@ -42,12 +42,6 @@ std::string toDosPath(std::string_view posix_relative)
     return result;
 }
 
-bool wantsCdDrive(const GameDefinition& game)
-{
-    const auto& sources = game.sources();
-    return !sources.empty() && sources.front().install_type == InstallType::IsoInstall;
-}
-
 bool validateConfDir(const std::filesystem::path& dir, std::string_view name,
                      std::string& error)
 {
@@ -280,7 +274,7 @@ std::optional<std::string> ConfWriter::renderConf(const GameDefinition& game,
     // write config/saves at the drive root, fotaq's QUEEN.SAV does)
     // and one tile cannot see another's files.
     conf << "mount c \"" << (cache_base / "installs" / game.slug()).string() << "\"\n";
-    if (wantsCdDrive(game)) {
+    if (game.wantsCdDrive()) {
         const auto image = firstIsoImage(cache_base / "downloads" / game.slug(), error);
         if (!image) {
             return std::nullopt;
@@ -369,8 +363,8 @@ std::optional<std::filesystem::path> ConfWriter::writeInstallConf(
     if (!conf) {
         return std::nullopt;
     }
-    const auto target_dir = wantsCdDrive(game) ? cache_base
-                                               : extractsDir(cache_base, game.slug());
+    const auto target_dir = game.wantsCdDrive() ? cache_base
+                                                : extractsDir(cache_base, game.slug());
     return writeConfFile(target_dir, "install.conf", *conf, error);
 }
 

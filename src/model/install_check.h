@@ -25,6 +25,12 @@ std::vector<std::string> installDamage(const GameDefinition& game,
 std::vector<std::string> verifyInstall(const GameDefinition& game,
                                        const std::filesystem::path& install_dir);
 
+// Pre-launch media gate: a CD title whose downloads dir holds no ISO
+// cannot boot - the run conf mounts the image. Empty result means
+// playable; non-CD titles always pass.
+std::vector<std::string> mediaDamage(const GameDefinition& game,
+                                     const std::filesystem::path& downloads_dir);
+
 } // namespace showroom
 
 #endif // SHOWROOM_MODEL_INSTALL_CHECK_H

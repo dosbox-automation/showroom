@@ -534,7 +534,12 @@ bool MainWindow::ensureIntactOrOffer(const GameDefinition& game)
     if (!install_dir) {
         return false;
     }
-    const auto damage = installDamage(game, *install_dir);
+    auto damage = installDamage(game, *install_dir);
+    if (damage.empty()) {
+        if (const auto downloads = Paths::downloadDirFor(game.slug())) {
+            damage = mediaDamage(game, *downloads);
+        }
+    }
     if (damage.empty()) {
         return true;
     }
