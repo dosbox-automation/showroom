@@ -8,7 +8,7 @@ slug = "rayman"
 title = "Rayman"
 rank = 9
 license = "demo"
-recipe_status = "todo"
+recipe_status = "done"
 
 [sources.primary]
 role = "primary"
@@ -32,10 +32,10 @@ sblaster_type = "sb16"
 mpu401 = "intelligent"
 midi_device = "fluidsynth"
 
-# HAND-FILLED. An empty executable means the game has no recipe yet;
-# the showroom shows the tile but refuses to launch it.
+# HAND-FILLED. Pre-installed demo dump; HMI sound autodetects,
+# no config file needed (probe 2026-08-02).
 [launch]
-executable = ""
+executable = "RAYMAN.EXE"
 working_dir = ""
 setup_exe = ""
 
@@ -49,3 +49,5 @@ max_runtime_seconds = 120
 # HAND-FILLED. Files that must exist after a successful install,
 # checked before every launch. Sound config files vary - leave them out.
 [install.expected_files]
+"RAYMAN.EXE"       = { size = 412264 }
+"PCMAP/ALLFIX.DAT" = { size = 519234 }

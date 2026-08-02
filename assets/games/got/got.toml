@@ -9,7 +9,7 @@ title = "God of Thunder"
 rank = 16
 version = "1.1"
 license = "freeware"
-recipe_status = "todo"
+recipe_status = "done"
 
 [sources.primary]
 role = "primary"
@@ -33,12 +33,12 @@ sblaster_type = "sb16"
 mpu401 = "intelligent"
 midi_device = "fluidsynth"
 
-# HAND-FILLED. An empty executable means the game has no recipe yet;
-# the showroom shows the tile but refuses to launch it.
+# HAND-FILLED. Flat zip; the game reads the BLASTER variable the
+# engine provides, no config file needed (probe 2026-08-02).
 [launch]
-executable = ""
+executable = "GOT.EXE"
 working_dir = ""
-setup_exe = ""
+setup_exe = "SETBLAST.EXE"
 
 [screenshots]
 title = "title.png"
@@ -50,3 +50,5 @@ max_runtime_seconds = 120
 # HAND-FILLED. Files that must exist after a successful install,
 # checked before every launch. Sound config files vary - leave them out.
 [install.expected_files]
+"GOT.EXE"    = { size = 389305 }
+"GOTRES.DAT" = { size = 739710 }

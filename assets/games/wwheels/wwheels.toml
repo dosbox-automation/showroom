@@ -9,17 +9,20 @@ title = "Wacky Wheels"
 rank = 12
 version = "1.1"
 license = "shareware"
-recipe_status = "todo"
+recipe_status = "done"
 
+# Swapped 2026-08-02: the 1994 Apogee shareware with its real INSTALL.EXE
+# is the primary (visible install, original timestamps); the pre-installed
+# dosbox-ready dump demotes to mirror.
 [sources.primary]
 role = "primary"
-install_type = "unzip"
-url = "https://dosgames.com/files/DOSBOX_WACKY.ZIP"
+install_type = "unzipinstall"
+url = "https://www.classicdosgames.com/files/games/beavis-soft/1wacky.zip"
 
 [sources.mirror]
 role = "mirror"
-install_type = "unzipinstall"
-url = "https://www.classicdosgames.com/files/games/beavis-soft/1wacky.zip"
+install_type = "unzip"
+url = "https://dosgames.com/files/DOSBOX_WACKY.ZIP"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.
@@ -33,20 +36,23 @@ sblaster_type = "sb16"
 mpu401 = "intelligent"
 midi_device = "fluidsynth"
 
-# HAND-FILLED. An empty executable means the game has no recipe yet;
-# the showroom shows the tile but refuses to launch it.
+# HAND-FILLED. The Apogee installer unpacks WWSW11.SHR to \WACKY; the
+# recipe drives SETUP for SB effects + General MIDI music (probe
+# 2026-08-02).
 [launch]
-executable = ""
-working_dir = ""
-setup_exe = ""
+executable = "WW.EXE"
+working_dir = "WACKY"
+setup_exe = "SETUP.EXE"
 
 [screenshots]
 title = "title.png"
 gameplay = "gameplay.png"
 
 [install]
-max_runtime_seconds = 120
+max_runtime_seconds = 300
 
 # HAND-FILLED. Files that must exist after a successful install,
 # checked before every launch. Sound config files vary - leave them out.
 [install.expected_files]
+"WACKY/WW.EXE"    = { size = 650437 }
+"WACKY/WACKY.DAT" = { size = 4398948 }
