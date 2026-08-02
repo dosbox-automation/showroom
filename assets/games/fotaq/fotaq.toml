@@ -13,7 +13,7 @@ recipe_status = "done"
 [sources.primary]
 role = "primary"
 install_type = "floppyinstall"
-url = "https://archive.org/download/001262-FlightOfTheAmazonQueen/001262_flight_of_the_amazon_queen.7z/"
+url = "https://archive.org/download/001262-FlightOfTheAmazonQueen/001262_flight_of_the_amazon_queen.7z"
 
 [sources.mirror]
 role = "mirror"
