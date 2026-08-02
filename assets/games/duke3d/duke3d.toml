@@ -2,13 +2,14 @@
 # This file is the source of truth for the game and is maintained by hand
 # from here on: the generator will not overwrite it without --force.
 #
-# v1.3d shareware episode; setup-driving showcase
+# Shareware v1.1 (CD installer and SETUP both report 1.1; an earlier
+# note claimed v1.3d). Setup-driving showcase.
 
 slug = "duke3d"
 title = "Duke Nukem 3D"
 rank = 10
 license = "shareware"
-recipe_status = "todo"
+recipe_status = "done"
 
 [sources.primary]
 role = "primary"
@@ -35,17 +36,21 @@ midi_device = "fluidsynth"
 # HAND-FILLED. An empty executable means the game has no recipe yet;
 # the showroom shows the tile but refuses to launch it.
 [launch]
-executable = ""
-working_dir = ""
-setup_exe = ""
+executable = "DUKE3D.EXE"
+working_dir = "DUKE3D"
+setup_exe = "SETUP.EXE"
 
 [screenshots]
 title = "title.png"
 gameplay = "gameplay.png"
 
 [install]
-max_runtime_seconds = 120
+max_runtime_seconds = 300
 
 # HAND-FILLED. Files that must exist after a successful install,
 # checked before every launch. Sound config files vary - leave them out.
 [install.expected_files]
+"DUKE3D/DUKE3D.EXE" = { size = 1076339 }
+"DUKE3D/DUKE3D.GRP" = { size = 10442980 }
+"DUKE3D/SETUP.EXE" = { size = 27153 }
+"DUKE3D/DUKE.RTS" = { size = 188954 }
