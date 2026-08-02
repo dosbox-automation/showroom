@@ -9,7 +9,7 @@ title = "Warcraft 2"
 rank = 15
 version = "1.08sh"
 license = "demo"
-recipe_status = "todo"
+recipe_status = "done"
 
 [sources.primary]
 role = "primary"
@@ -36,17 +36,20 @@ midi_device = "fluidsynth"
 # HAND-FILLED. An empty executable means the game has no recipe yet;
 # the showroom shows the tile but refuses to launch it.
 [launch]
-executable = ""
-working_dir = ""
-setup_exe = ""
+executable = "WAR2.EXE"
+working_dir = "WAR2"
+setup_exe = "SETUP.EXE"
 
 [screenshots]
 title = "title.png"
 gameplay = "gameplay.png"
 
 [install]
-max_runtime_seconds = 120
+max_runtime_seconds = 420
 
 # HAND-FILLED. Files that must exist after a successful install,
 # checked before every launch. Sound config files vary - leave them out.
 [install.expected_files]
+"WAR2/WAR2.EXE" = { size = 877567 }
+"WAR2/SETUP.EXE" = { size = 581265 }
+"WAR2/UVCONFIG.EXE" = { size = 260250 }
