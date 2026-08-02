@@ -9,7 +9,7 @@ title = "One Must Fall 2097"
 rank = 6
 version = "2.1"
 license = "freeware"
-recipe_status = "todo"
+recipe_status = "done"
 
 [sources.primary]
 role = "primary"
