@@ -9,7 +9,7 @@ title = "Heretic"
 rank = 13
 version = "1"
 license = "shareware"
-recipe_status = "todo"
+recipe_status = "done"
 
 [sources.primary]
 role = "primary"
@@ -36,17 +36,20 @@ midi_device = "fluidsynth"
 # HAND-FILLED. An empty executable means the game has no recipe yet;
 # the showroom shows the tile but refuses to launch it.
 [launch]
-executable = ""
-working_dir = ""
-setup_exe = ""
+executable = "HERETIC.EXE"
+working_dir = "HERETIC"
+setup_exe = "SETUP.EXE"
 
 [screenshots]
 title = "title.png"
 gameplay = "gameplay.png"
 
 [install]
-max_runtime_seconds = 120
+max_runtime_seconds = 300
 
 # HAND-FILLED. Files that must exist after a successful install,
 # checked before every launch. Sound config files vary - leave them out.
 [install.expected_files]
+"HERETIC/HERETIC.EXE" = { size = 717239 }
+"HERETIC/HERETIC1.WAD" = { size = 5120300 }
+"HERETIC/SETUP.EXE" = { size = 47094 }
