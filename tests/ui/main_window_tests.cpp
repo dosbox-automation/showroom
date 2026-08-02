@@ -305,19 +305,10 @@ protected:
         }
     }
 
-    static QString nonLaunchableSlug()
-    {
-        for (std::size_t i = 0; i < catalog().size(); ++i) {
-            if (!catalog().at(i).isLaunchable()) {
-                return QString::fromStdString(catalog().at(i).slug());
-            }
-        }
-        return {};
-    }
-
     static void writeGame(const std::filesystem::path& games_dir, const std::string& slug,
                           const std::string& title, int rank,
-                          const std::string& extra_toml = {})
+                          const std::string& extra_toml = {},
+                          const std::string& executable = "GAME.EXE")
     {
         std::filesystem::create_directories(games_dir / slug);
         std::ofstream out(games_dir / slug / (slug + ".toml"));
@@ -332,7 +323,7 @@ protected:
             << "cpu_cycles = 3000\n"
             << "cpu_cycles_protected = 3000\n"
             << "[launch]\n"
-            << "executable = \"GAME.EXE\"\n"
+            << "executable = \"" << executable << "\"\n"
             << "[install]\n"
             << "max_runtime_seconds = 60\n"
             << extra_toml;
@@ -345,17 +336,22 @@ protected:
 TEST_F(LaunchFixture, a_tile_with_an_install_directory_starts_ready)
 {
     // A leftover install directory for a game without a launch executable
-    // must not put Play on its tile.
-    const QString other = nonLaunchableSlug();
-    ASSERT_FALSE(other.isEmpty());
-    std::filesystem::create_directories(cache_ / "installs" / other.toStdString());
+    // must not put Play on its tile. Both subjects are built here: every
+    // bundled game has a recipe now.
+    const auto games_dir = std::filesystem::path(dir_.path().toStdString()) / "games";
+    writeGame(games_dir, "alpha", "Alpha", 1);
+    writeGame(games_dir, "norecipe", "No Recipe", 2, {}, "");
+    const auto games = GameCatalog::loadFromDirectory(games_dir);
+    ASSERT_EQ(games.size(), 2u);
+    std::filesystem::create_directories(cache_ / "installs" / "alpha");
+    std::filesystem::create_directories(cache_ / "installs" / "norecipe");
 
     FakeLauncher launcher;
-    MainWindow window(catalog(), assetsDir(), settings(), sizer(), &launcher);
+    MainWindow window(games, assetsDir(), settings(), sizer(), &launcher);
 
-    ASSERT_NE(window.grid()->tileFor("doom"), nullptr);
-    EXPECT_EQ(window.grid()->tileFor("doom")->state(), TileState::Ready);
-    EXPECT_EQ(window.grid()->tileFor(other)->state(), TileState::NoRecipe);
+    ASSERT_NE(window.grid()->tileFor("alpha"), nullptr);
+    EXPECT_EQ(window.grid()->tileFor("alpha")->state(), TileState::Ready);
+    EXPECT_EQ(window.grid()->tileFor("norecipe")->state(), TileState::NoRecipe);
 }
 
 TEST_F(LaunchFixture, without_a_launcher_no_tile_reads_the_cache)
@@ -422,8 +418,8 @@ protected:
     }
 };
 
-// The bundled catalogue deliberately carries one launchable game, and a
-// switch needs two, so this fixture builds its own through the real loader.
+// A switch needs two games whose install state this test controls, so
+// this fixture builds its own catalogue through the real loader.
 class SwitchFixture : public LaunchFixture {
 protected:
     void SetUp() override

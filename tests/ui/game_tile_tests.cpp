@@ -67,17 +67,34 @@ TEST(GameTileState, a_game_with_a_launch_recipe_starts_ready_to_download)
 
 TEST(GameTileState, a_game_without_one_starts_in_the_no_recipe_state)
 {
-    // Fifteen of the sixteen are in this state today, so it is the one
-    // the grid shows most on a first run.
-    int without_recipe = 0;
-    for (const GameDefinition& definition : catalog()) {
-        if (!definition.isLaunchable()) {
-            const GameTile tile(definition, gamesDir() / definition.slug());
-            EXPECT_EQ(tile.state(), TileState::NoRecipe) << definition.slug();
-            ++without_recipe;
-        }
-    }
-    EXPECT_GT(without_recipe, 0) << "no unlaunchable game left to check the state with";
+    // Built here, not taken from the catalogue: every bundled game has a
+    // recipe now, and the state still has to hold for one that does not.
+    std::string error;
+    const auto definition = GameDefinition::fromTomlString(R"(slug = "probe"
+title = "Probe"
+rank = 1
+license = "shareware"
+
+[sources.primary]
+url = "https://example.invalid/probe.zip"
+
+[dosbox]
+machine = "svga_s3"
+cpu_cycles = 3000
+cpu_cycles_protected = 3000
+
+[launch]
+executable = ""
+
+[install]
+max_runtime_seconds = 60
+)",
+                                                           error);
+    ASSERT_TRUE(definition) << error;
+    ASSERT_FALSE(definition->isLaunchable());
+
+    const GameTile tile(*definition, gamesDir() / "doom");
+    EXPECT_EQ(tile.state(), TileState::NoRecipe);
 }
 
 TEST(GameTileGeometry, the_tile_is_four_by_three_at_every_step)

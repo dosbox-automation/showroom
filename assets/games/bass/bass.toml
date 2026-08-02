@@ -10,7 +10,7 @@ slug = "bass"
 title = "Beneath a Steel Sky"
 rank = 7
 license = "freeware"
-recipe_status = "todo"
+recipe_status = "done"
 
 [sources.primary]
 role = "primary"
@@ -37,8 +37,8 @@ midi_device = "fluidsynth"
 # HAND-FILLED. An empty executable means the game has no recipe yet;
 # the showroom shows the tile but refuses to launch it.
 [launch]
-executable = ""
-working_dir = ""
+executable = "SKY.BAT"
+working_dir = "SKY"
 setup_exe = ""
 
 [screenshots]
@@ -46,8 +46,10 @@ title = "title.png"
 gameplay = "gameplay.png"
 
 [install]
-max_runtime_seconds = 120
+max_runtime_seconds = 180
 
 # HAND-FILLED. Files that must exist after a successful install,
 # checked before every launch. Sound config files vary - leave them out.
 [install.expected_files]
+"SKY/SKY.BAT" = { size = 20 }
+"SKY/SKY.CFG" = { size = 5 }
