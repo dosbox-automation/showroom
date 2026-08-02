@@ -295,13 +295,6 @@ void InstallRunner::runDirectInstall()
         failInstall("extraction failed: " + QString::fromStdString(result.error));
         return;
     }
-    std::string overlay_error;
-    if (!copyOverlay(games_dir_ / game_->slug() / "overlay",
-                     staging_dir_,
-                     overlay_error)) {
-        failInstall(QString::fromStdString(overlay_error));
-        return;
-    }
     verifyAndPromote();
 }
 
@@ -422,6 +415,13 @@ void InstallRunner::onEngineEnded(int exit_code)
 
 void InstallRunner::verifyAndPromote()
 {
+    std::string overlay_error;
+    if (!copyOverlay(games_dir_ / game_->slug() / "overlay",
+                     staging_dir_,
+                     overlay_error)) {
+        failInstall(QString::fromStdString(overlay_error));
+        return;
+    }
     const auto failures = verifyInstall(*game_, staging_dir_);
     if (!failures.empty()) {
         QStringList parts;

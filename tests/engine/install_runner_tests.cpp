@@ -434,6 +434,24 @@ TEST_F(InstallRunnerFixture, the_overlay_lands_on_top_of_a_plain_archive_install
                                     / "SOUND.CFG"));
 }
 
+TEST_F(InstallRunnerFixture, the_overlay_lands_on_engine_driven_installs_too)
+{
+    const auto overlay = games_ / "doom" / "overlay" / "GOLD" / "DOOM";
+    fs::create_directories(overlay);
+    std::ofstream(overlay / "SOUND.CFG") << "sb16";
+    server_.queueScriptStatus(
+            R"({"state":"completed","output":{"install_complete":"yes"}})");
+
+    QSignalSpy succeeded(runner_.get(), &InstallRunner::succeeded);
+    std::string error;
+    ASSERT_TRUE(runner_->startInstall(installableGame(), error)) << error;
+    plantStagedResult();
+
+    ASSERT_TRUE(pumpUntil(succeeded, 20000));
+    EXPECT_TRUE(fs::is_regular_file(cache_ / "installs" / "doom" / "GOLD" / "DOOM"
+                                    / "SOUND.CFG"));
+}
+
 TEST_F(InstallRunnerFixture, a_failed_plain_archive_extraction_rolls_back)
 {
     extractor_.fail = true;

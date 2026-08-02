@@ -160,7 +160,10 @@ std::optional<std::filesystem::path> firstFloppyImage(
 {
     std::error_code ec;
     std::vector<std::filesystem::path> images;
-    for (const auto& entry : std::filesystem::directory_iterator(extracts_dir, ec)) {
+    // Recursive: disk sets often extract into a subdirectory named
+    // after the archive.
+    for (const auto& entry :
+         std::filesystem::recursive_directory_iterator(extracts_dir, ec)) {
         if (entry.is_regular_file(ec) && isFloppyImageName(entry.path().filename())) {
             images.push_back(entry.path());
         }
@@ -243,17 +246,18 @@ std::optional<std::string> ConfWriter::renderConf(const GameDefinition& game,
     renderEngineSettings(game, conf);
 
     conf << "[autoexec]\n";
-    conf << "mount c \"" << (cache_base / "installs").string() << "\"\n";
+    // The game's own install dir is all of C: - era-correct (games
+    // write config/saves at the drive root, fotaq's QUEEN.SAV does)
+    // and one tile cannot see another's files.
+    conf << "mount c \"" << (cache_base / "installs" / game.slug()).string() << "\"\n";
     if (wantsCdDrive(game)) {
         conf << "mount d \"" << (cache_base / "downloads" / game.slug()).string()
              << "\" -t cdrom\n";
     }
     conf << "c:\n";
-    std::string dos_dir = "\\" + game.slug();
     if (!game.launch().working_dir.empty()) {
-        dos_dir += "\\" + toDosPath(game.launch().working_dir);
+        conf << "cd \\" << toDosPath(game.launch().working_dir) << "\n";
     }
-    conf << "cd " << dos_dir << "\n";
     conf << game.launch().executable << "\n";
     conf << "exit\n";
 

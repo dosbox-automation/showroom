@@ -137,23 +137,23 @@ TEST_F(ConfWriterDir, renders_engine_settings_from_the_definition)
     EXPECT_TRUE(hasLine(*conf, "webserver_port = 8686"));
 }
 
-TEST_F(ConfWriterDir, autoexec_mounts_installs_under_the_cache_base_and_runs_the_game)
+TEST_F(ConfWriterDir, autoexec_mounts_the_games_own_install_dir_and_runs_the_game)
 {
     const auto game = parseOrDie(doomLikeToml());
     std::string error;
     const auto conf = ConfWriter::renderConf(game, dir_, error);
     ASSERT_TRUE(conf) << error;
 
-    const auto installs = (dir_ / "installs").string();
+    const auto install = (dir_ / "installs" / "doom").string();
     EXPECT_TRUE(hasLine(*conf, "[autoexec]"));
-    EXPECT_TRUE(hasLine(*conf, "mount c \"" + installs + "\""));
+    EXPECT_TRUE(hasLine(*conf, "mount c \"" + install + "\""));
     EXPECT_TRUE(hasLine(*conf, "c:"));
-    EXPECT_TRUE(hasLine(*conf, "cd \\doom\\GOLD\\DOOM"));
+    EXPECT_TRUE(hasLine(*conf, "cd \\GOLD\\DOOM"));
     EXPECT_TRUE(hasLine(*conf, "DOOM.EXE"));
     EXPECT_TRUE(hasLine(*conf, "exit"));
 }
 
-TEST_F(ConfWriterDir, empty_working_dir_changes_into_the_slug_directory_alone)
+TEST_F(ConfWriterDir, empty_working_dir_stays_at_the_drive_root)
 {
     auto toml = doomLikeToml();
     const auto pos = toml.find("working_dir = \"GOLD/DOOM\"");
@@ -164,7 +164,7 @@ TEST_F(ConfWriterDir, empty_working_dir_changes_into_the_slug_directory_alone)
     std::string error;
     const auto conf = ConfWriter::renderConf(game, dir_, error);
     ASSERT_TRUE(conf) << error;
-    EXPECT_TRUE(hasLine(*conf, "cd \\doom"));
+    EXPECT_EQ(conf->find("cd \\"), std::string::npos);
 }
 
 TEST_F(ConfWriterDir, cd_title_mounts_its_download_directory_as_cdrom)
@@ -435,6 +435,20 @@ TEST_F(InstallConfDir, floppy_images_are_picked_in_name_order_not_directory_orde
     ASSERT_TRUE(conf) << error;
     EXPECT_NE(conf->find("disk1.ima"), std::string::npos);
     EXPECT_EQ(conf->find("disk2.ima"), std::string::npos);
+}
+
+TEST_F(InstallConfDir, floppy_images_inside_a_subdirectory_are_found)
+{
+    // Disk sets often extract into a subdirectory named after the
+    // archive (fotaq's six-disk 7z does).
+    const auto game = parseOrDie(doomLikeToml());
+    std::filesystem::create_directories(extracts_ / "diskset");
+    std::ofstream(extracts_ / "diskset" / "disk1.img", std::ios::binary) << "image";
+    std::string error;
+    const auto conf = ConfWriter::renderInstallConf(game, extracts_, error);
+    ASSERT_TRUE(conf) << error;
+    EXPECT_NE(conf->find((extracts_ / "diskset" / "disk1.img").string()),
+              std::string::npos);
 }
 
 TEST_F(InstallConfDir, floppy_image_extension_matching_ignores_case)
