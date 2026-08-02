@@ -9,7 +9,7 @@ title = "Epic Pinball"
 rank = 2
 version = "2.1"
 license = "shareware"
-recipe_status = "todo"
+recipe_status = "done"
 
 [sources.primary]
 role = "primary"
@@ -33,20 +33,23 @@ sblaster_type = "sb16"
 mpu401 = "intelligent"
 midi_device = "fluidsynth"
 
-# HAND-FILLED. An empty executable means the game has no recipe yet;
-# the showroom shows the tile but refuses to launch it.
+# HAND-FILLED. The extractor menu names the payload "Epic Pinball:
+# SUPER ANDROID"; it installs to \EPICPIN and the recipe configures
+# sound via the shipped SETUP.EXE (probe 2026-08-02).
 [launch]
-executable = ""
-working_dir = ""
-setup_exe = ""
+executable = "PINBALL.EXE"
+working_dir = "EPICPIN"
+setup_exe = "SETUP.EXE"
 
 [screenshots]
 title = "title.png"
 gameplay = "gameplay.png"
 
 [install]
-max_runtime_seconds = 120
+max_runtime_seconds = 300
 
 # HAND-FILLED. Files that must exist after a successful install,
 # checked before every launch. Sound config files vary - leave them out.
 [install.expected_files]
+"EPICPIN/PINBALL.EXE" = { size = 37477 }
+"EPICPIN/EP1.EXE"     = { size = 251771 }
