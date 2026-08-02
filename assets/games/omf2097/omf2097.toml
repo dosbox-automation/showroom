@@ -33,20 +33,23 @@ sblaster_type = "sb16"
 mpu401 = "intelligent"
 midi_device = "fluidsynth"
 
-# HAND-FILLED. An empty executable means the game has no recipe yet;
-# the showroom shows the tile but refuses to launch it.
+# HAND-FILLED. The extractor installs to \OMF; OMF.EXE is the DOS4GW
+# loader stub. Sound set via the graphics-mode SETUP.EXE (probe
+# 2026-08-02).
 [launch]
-executable = ""
-working_dir = ""
-setup_exe = ""
+executable = "OMF.EXE"
+working_dir = "OMF"
+setup_exe = "SETUP.EXE"
 
 [screenshots]
 title = "title.png"
 gameplay = "gameplay.png"
 
 [install]
-max_runtime_seconds = 120
+max_runtime_seconds = 300
 
 # HAND-FILLED. Files that must exist after a successful install,
 # checked before every launch. Sound config files vary - leave them out.
 [install.expected_files]
+"OMF/OMF.EXE"    = { size = 4448 }
+"OMF/SOUNDS.DAT" = { size = 280758 }

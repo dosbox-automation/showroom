@@ -36,7 +36,7 @@ end
 dosbox.type("Y")
 dosbox.output["progress"] = "20"
 
--- Extraction runs ~2.5 minutes at 12000 cycles.
+-- Extraction takes seconds at 12000 cycles; the timeout is headroom.
 if not dosbox.wait_for_text("is now installed", 15000) then
     dosbox.abort("extraction never finished")
 end
