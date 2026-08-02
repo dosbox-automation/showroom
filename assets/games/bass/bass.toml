@@ -2,7 +2,9 @@
 # This file is the source of truth for the game and is maintained by hand
 # from here on: the generator will not overwrite it without --force.
 #
-# Revolution freeware release; verify DOS-version terms (ada-l996). Source ISO (SKY.iso) has mangled filenames (underscores instead of dots) - use mirror ISO (Virgin 1995 original) for install.
+# Revolution freeware release; verify DOS-version terms (ada-l996). The
+# Virgin 1995 original is primary: the SKY.iso rip has mangled filenames
+# (underscores instead of dots) and cannot install.
 
 slug = "bass"
 title = "Beneath a Steel Sky"
@@ -13,12 +15,12 @@ recipe_status = "todo"
 [sources.primary]
 role = "primary"
 install_type = "isoinstall"
-url = "https://archive.org/download/sky_20251118/SKY.iso"
+url = "https://archive.org/download/Beneath_a_Steel_Sky_1995_Virgin/Beneath%20a%20Steel%20Sky%20%281995%29%28Virgin%29.iso"
 
 [sources.mirror]
 role = "mirror"
 install_type = "isoinstall"
-url = "https://archive.org/download/Beneath_a_Steel_Sky_1995_Virgin/Beneath%20a%20Steel%20Sky%20%281995%29%28Virgin%29.iso"
+url = "https://archive.org/download/sky_20251118/SKY.iso"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.

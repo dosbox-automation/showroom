@@ -14,7 +14,7 @@ recipe_status = "todo"
 [sources.primary]
 role = "primary"
 install_type = "isoinstall"
-url = "https://archive.org/download/War2TOD-Demo-108sh/War2Demo_v108sh.iso/"
+url = "https://archive.org/download/War2TOD-Demo-108sh/War2Demo_v108sh.iso"
 
 [sources.mirror]
 role = "mirror"
