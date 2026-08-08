@@ -30,6 +30,39 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
+BSD 2-CLAUSE LICENSE
+================================================================================
+Used by: libarchive
+
+The libarchive distribution as a whole is Copyright by Tim Kientzle.
+Individual files carry their own statements; a few are public domain or
+triple-licensed (CC0-1.0 / OpenSSL / Apache-2.0), see its COPYING file.
+
+Copyright (c) 2003-2018 <author(s)>
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer
+   in this position and unchanged.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR(S) ``AS IS'' AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE AUTHOR(S) BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+================================================================================
 BSD 3-CLAUSE LICENSE
 ================================================================================
 Used by: googletest (GoogleTest, GoogleMock)
@@ -256,5 +289,10 @@ and third-party notices travel with it inside the bundle.
 PACKAGE-SPECIFIC LICENSE INFORMATION
 ================================================================================
 toml++       MIT            https://github.com/marzer/tomlplusplus
+libarchive   BSD-2-Clause   https://github.com/libarchive/libarchive
 googletest   BSD-3-Clause   https://github.com/google/googletest
 Qt 6         LGPL-3.0       https://www.qt.io/
+
+src/imported/log.{h,cpp} is copied from the house sibling project
+augra-engine (GPL-3.0-or-later, same license as the showroom); the files
+carry their provenance in their own headers.
