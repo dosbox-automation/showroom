@@ -14,11 +14,13 @@ recipe_status = "done"
 role = "primary"
 install_type = "unzip"
 url = "https://dosgames.com/files/raymandemo.zip"
+sha256 = "09ecc8228f0489e4d4e881faba469290f390901f447bfbb5cdf0a705ba4d12a1"
 
 [sources.mirror]
 role = "mirror"
 install_type = "unzip"
 url = "https://www.classicdosgames.com/files/games/ubisoft/raydemo.exe"
+sha256 = "479dafc0d9caa66c87b3d2a4c57a5514700e0a32fc06c0363a4b9fb5727daab6"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.

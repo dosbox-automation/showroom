@@ -2,21 +2,21 @@
   "slug": "duke3d",
   "title": "Duke Nukem 3D",
   "rank": 10,
-  "version": null,
+  "version": "1.3d",
   "license": "shareware",
   "recipe_status": "todo",
   "sources": [
     {
       "role": "primary",
-      "install_type": "isoinstall",
-      "url": "https://archive.org/download/duke-nukem-3-d_202503/Duke_Nukem_3D.iso",
+      "install_type": "unzipinstall",
+      "url": "https://archive.org/download/3dduke13/3dduke13.zip",
       "filename": null,
       "sha256": null
     },
     {
       "role": "mirror",
       "install_type": "unzipinstall",
-      "url": "https://www.classicdosgames.com/files/games/apogee/3dduke11.zip",
+      "url": "https://www.classicdosgames.com/files/games/apogee/3dduke13.zip",
       "filename": null,
       "sha256": null
     }

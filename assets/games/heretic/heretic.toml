@@ -15,11 +15,13 @@ recipe_status = "done"
 role = "primary"
 install_type = "isoinstall"
 url = "https://archive.org/download/shareware_202206/SHAREWARE.iso"
+sha256 = "3273faec8b3506525df4f7f7834e0dcba8ee213a9032e2877763ea6a67a070b4"
 
 [sources.mirror]
 role = "mirror"
 install_type = "unzipinstall"
 url = "https://www.classicdosgames.com/files/games/raven/htic_v10.zip"
+sha256 = "8cfbb02ce24583178ac3db37b94dbde631b317e46114cb99f8b5da241deb7dad"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.

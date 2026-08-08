@@ -15,11 +15,13 @@ recipe_status = "done"
 role = "primary"
 install_type = "floppyinstall"
 url = "https://archive.org/download/doom-shareware-floppy-v-1.666-2-disk.-7z/Doom%20Shareware%20Floppy%20%28v1.666%29%20%5B2%20Disk%5D.7z"
+sha256 = "397136eeb7f565c7e47c0041ed0862ded788a209e3d4e75e91893867cdff2f1f"
 
 [sources.mirror]
 role = "mirror"
 install_type = "isoinstall"
 url = "https://archive.org/download/shareware_202206/SHAREWARE.iso"
+sha256 = "3273faec8b3506525df4f7f7834e0dcba8ee213a9032e2877763ea6a67a070b4"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.

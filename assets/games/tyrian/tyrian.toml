@@ -15,11 +15,13 @@ recipe_status = "done"
 role = "primary"
 install_type = "exeinstall"
 url = "https://archive.org/download/TOEMGSWC/EPICSWCD96/EPIC/TYRSW20.EXE"
+sha256 = "c4ac7282ffaf5027ede575ddc206dc648d9617f7c69f78905ceb44f897372ee4"
 
 [sources.mirror]
 role = "mirror"
 install_type = "unzip"
 url = "https://www.classicdosgames.com/files/games/eclipse/tyrsw20.zip"
+sha256 = "07b2ed8df2f8cea790aa922b4e6b75eea91a90dd038c5ba9fd7c037a454a798d"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.

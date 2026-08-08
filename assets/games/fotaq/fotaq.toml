@@ -2,7 +2,10 @@
 # This file is the source of truth for the game and is maintained by hand
 # from here on: the generator will not overwrite it without --force.
 #
-# secondary is just demo
+# Authors' freeware release, verified aug-l996. The pinned DOS rips
+# predate the freeware readme; accepted under the grant's intent
+# (2026-08-08), with scummvm-readme.txt bundled here to keep the
+# licence text with the game. Secondary is just a demo.
 
 slug = "fotaq"
 title = "Flight of the Amazon Queen"
@@ -14,11 +17,13 @@ recipe_status = "done"
 role = "primary"
 install_type = "floppyinstall"
 url = "https://archive.org/download/001262-FlightOfTheAmazonQueen/001262_flight_of_the_amazon_queen.7z"
+sha256 = "3fbb7cd1786691b49be9aafa01af285d7cc38a9427a3cc7c13874e3a64c6fb34"
 
 [sources.mirror]
 role = "mirror"
 install_type = "unzip"
 url = "https://www.classicdosgames.com/files/games/geewhiz/amazon.zip"
+sha256 = "223339270e8e4f289a0c93ceca1461dda0af786bd68dec4323e90772eda130e8"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.

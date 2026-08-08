@@ -14,11 +14,13 @@ recipe_status = "done"
 role = "primary"
 install_type = "unzip"
 url = "https://www.classicdosgames.com/files/games/chrissawyer/tntdem.zip"
+sha256 = "9f07383ce2462fac8b2de3115a2d05f7ddb81b701dde3a7b833aa6f1ca2f62db"
 
 [sources.mirror]
 role = "mirror"
 install_type = "unzip"
 url = "https://dosgames.com/files/DOSBOX_TTYCOON.ZIP"
+sha256 = "da4fd1906c8b8e8f297306e04b48bf6a76c0a2a532aafd6d7ab2348f83ad1a98"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.

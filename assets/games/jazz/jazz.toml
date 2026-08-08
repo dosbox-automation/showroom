@@ -15,11 +15,13 @@ recipe_status = "done"
 role = "primary"
 install_type = "exeinstall"
 url = "https://archive.org/download/TOEMGSWC/EPICSWCD96/EPIC/JAZZSW11.EXE"
+sha256 = "8446ddbeb298087e552d8f58538b6315d15f5bb4f9eddbb2c27be144dd5f3c5b"
 
 [sources.mirror]
 role = "mirror"
 install_type = "unzipinstall"
 url = "https://www.classicdosgames.com/files/games/epic/1jazz11.zip"
+sha256 = "99db784d2f271c879af6a31a7a3affda0def236cc67d6f585c37dcfea0ab1edb"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.

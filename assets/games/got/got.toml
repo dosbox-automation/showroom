@@ -15,11 +15,13 @@ recipe_status = "done"
 role = "primary"
 install_type = "unzip"
 url = "https://www.classicdosgames.com/files/games/cse/gotfree.zip"
+sha256 = "94962e6fcbc6d547debda11224d00fdec7a0d03bacdf7d82d08ed8ea289c0c5e"
 
 [sources.mirror]
 role = "mirror"
 install_type = "unzip"
 url = "https://dosgames.com/files/gotfree.zip"
+sha256 = "94962e6fcbc6d547debda11224d00fdec7a0d03bacdf7d82d08ed8ea289c0c5e"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.

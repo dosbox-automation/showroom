@@ -14,11 +14,13 @@ recipe_status = "done"
 role = "primary"
 install_type = "unzip"
 url = "https://archive.org/download/DungeonHackDemo/hackdemo.zip"
+sha256 = "da81825d0467626755c8b3ad3fd2d49c57bcde6a031f7dca766a67a645fb5b36"
 
 [sources.mirror]
 role = "mirror"
 install_type = "unzip"
 url = "https://dosgames.com/files/hackdemo.zip"
+sha256 = "1f823603b0d8b1720a661ad2c900665572334e68491e46d67e1d17760dea905b"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.

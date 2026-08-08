@@ -2,8 +2,9 @@
 # This file is the source of truth for the game and is maintained by hand
 # from here on: the generator will not overwrite it without --force.
 #
-# Shareware v1.1 (CD installer and SETUP both report 1.1; an earlier
-# note claimed v1.3d). Setup-driving showcase.
+# Shareware v1.3d (repinned from v1.1 2026-08-08: the v1.3d zip
+# carries 3D Realms' LICENSE.TXT, the v1.1 packages carried no licence
+# text). Setup-driving showcase. Recipe proven against v1.3d unchanged.
 
 slug = "duke3d"
 title = "Duke Nukem 3D"
@@ -13,13 +14,15 @@ recipe_status = "done"
 
 [sources.primary]
 role = "primary"
-install_type = "isoinstall"
-url = "https://archive.org/download/duke-nukem-3-d_202503/Duke_Nukem_3D.iso"
+install_type = "unzipinstall"
+url = "https://archive.org/download/3dduke13/3dduke13.zip"
+sha256 = "c67efd179022bc6d9bde54f404c707cbcbdc15423c20be72e277bc2bdddf3d0e"
 
 [sources.mirror]
 role = "mirror"
 install_type = "unzipinstall"
-url = "https://www.classicdosgames.com/files/games/apogee/3dduke11.zip"
+url = "https://www.classicdosgames.com/files/games/apogee/3dduke13.zip"
+sha256 = "c67efd179022bc6d9bde54f404c707cbcbdc15423c20be72e277bc2bdddf3d0e"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.
@@ -50,7 +53,7 @@ max_runtime_seconds = 300
 # HAND-FILLED. Files that must exist after a successful install,
 # checked before every launch. Sound config files vary - leave them out.
 [install.expected_files]
-"DUKE3D/DUKE3D.EXE" = { size = 1076339 }
-"DUKE3D/DUKE3D.GRP" = { size = 10442980 }
+"DUKE3D/DUKE3D.EXE" = { size = 1178963 }
+"DUKE3D/DUKE3D.GRP" = { size = 11035779 }
 "DUKE3D/SETUP.EXE" = { size = 27153 }
 "DUKE3D/DUKE.RTS" = { size = 188954 }

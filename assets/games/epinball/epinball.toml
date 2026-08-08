@@ -15,11 +15,13 @@ recipe_status = "done"
 role = "primary"
 install_type = "exeinstall"
 url = "https://archive.org/download/TOEMGSWC/EPICSWCD96/EPIC/EPICPN21.EXE"
+sha256 = "d33e55f424b3994bef3ecd43886cbcf2098438191acd1f4358ee6e9df3dad4b1"
 
 [sources.mirror]
 role = "mirror"
 install_type = "unzip"
 url = "https://www.classicdosgames.com/files/games/epic/epicpn21.zip"
+sha256 = "7339deef5599b882eb7c87d77499a36ab795e6d6589e90b4799f0c029a998335"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.

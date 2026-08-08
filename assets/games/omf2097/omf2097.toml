@@ -15,11 +15,13 @@ recipe_status = "done"
 role = "primary"
 install_type = "exeinstall"
 url = "https://archive.org/download/TOEMGSWC/EPICSWCD96/EPIC/OMFSW21.EXE"
+sha256 = "f710e955005ab4a8a147d2a3d7afc0c565b63d0456d4867d4007e9b42f3d4958"
 
 [sources.mirror]
 role = "mirror"
 install_type = "exeinstall"
 url = "https://archive.org/download/one-must-fall-2097-shareware-jukebox-collection"
+sha256 = "c7204fa3482bc77b46f27efcc733456c056d666171fa62088649da222d412097"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.

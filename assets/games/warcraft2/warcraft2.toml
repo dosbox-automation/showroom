@@ -15,11 +15,13 @@ recipe_status = "done"
 role = "primary"
 install_type = "isoinstall"
 url = "https://archive.org/download/War2TOD-Demo-108sh/War2Demo_v108sh.iso"
+sha256 = "44bf68e3384dd94276b32f0a69b4d2637fd4bee2482fa748892bcc5f08a33bc8"
 
 [sources.mirror]
 role = "mirror"
 install_type = "unzip"
 url = "https://dosgames.com/files/DOSBOX_WAR2.ZIP"
+sha256 = "3081ec839803242a240b6ff22d70c983117ef1345974a864db6cdaf340c97d46"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.

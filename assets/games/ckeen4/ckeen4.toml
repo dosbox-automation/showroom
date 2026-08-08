@@ -14,11 +14,13 @@ recipe_status = "done"
 role = "primary"
 install_type = "floppyinstall"
 url = "https://archive.org/download/commander-keen-4-distant-markets-release/Commander%20Keen%204%20-%20Distant%20Markets%20release.img"
+sha256 = "266d09550df4bc53c01fa7e0437b23ac34141fd1d681a6dba09ac6b8669b235c"
 
 [sources.mirror]
 role = "mirror"
 install_type = "unzip"
 url = "https://dosgames.com/files/DOSBOX_KEEN4.ZIP"
+sha256 = "af49c2967969e89a8a4da8e5bf7b8bbc570522b81295696e7f5c1da37996b3c0"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.

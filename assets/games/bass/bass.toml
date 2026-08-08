@@ -2,9 +2,12 @@
 # This file is the source of truth for the game and is maintained by hand
 # from here on: the generator will not overwrite it without --force.
 #
-# Revolution freeware release; verify DOS-version terms (ada-l996). The
-# Virgin 1995 original is primary: the SKY.iso rip has mangled filenames
-# (underscores instead of dots) and cannot install.
+# Revolution freeware release, verified aug-l996. The pinned DOS rips
+# predate the freeware readme; accepted under the grant's intent
+# (2026-08-08), with scummvm-readme.txt bundled here to keep the
+# licence text with the game. The Virgin 1995 original is primary: the
+# SKY.iso rip has mangled filenames (underscores instead of dots) and
+# cannot install.
 
 slug = "bass"
 title = "Beneath a Steel Sky"
@@ -16,11 +19,13 @@ recipe_status = "done"
 role = "primary"
 install_type = "isoinstall"
 url = "https://archive.org/download/Beneath_a_Steel_Sky_1995_Virgin/Beneath%20a%20Steel%20Sky%20%281995%29%28Virgin%29.iso"
+sha256 = "1326b507b0df148120840c8b026a5739e7bbe8026527dc6dff4dd8ec78deff6e"
 
 [sources.mirror]
 role = "mirror"
 install_type = "isoinstall"
 url = "https://archive.org/download/sky_20251118/SKY.iso"
+sha256 = "be975cb3b7d800797490b3dcedb89b502776ad8f89e09f60b127b5fa456d0a1c"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.
