@@ -10,6 +10,11 @@ rank = 14
 license = "demo"
 recipe_status = "done"
 
+# IGDB says 1993; retail may be 1994 - the pinned source is the demo
+year = 1993
+publisher = "SSI"
+blurb = "A random dungeon every time you play, built on the Eye of the Beholder engine with AD&D rules. No two runs look alike."
+
 [sources.primary]
 role = "primary"
 install_type = "unzip"

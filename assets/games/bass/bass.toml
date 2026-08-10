@@ -15,6 +15,10 @@ rank = 7
 license = "freeware"
 recipe_status = "done"
 
+year = 1994
+publisher = "Virgin Interactive"
+blurb = "Robert Foster wakes up in a dystopian city with a robot sidekick and a conspiracy to untangle. Comic art by Dave Gibbons."
+
 [sources.primary]
 role = "primary"
 install_type = "isoinstall"

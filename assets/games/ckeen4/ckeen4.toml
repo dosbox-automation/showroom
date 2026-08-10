@@ -10,6 +10,10 @@ rank = 4
 license = "shareware"
 recipe_status = "done"
 
+year = 1991
+publisher = "Apogee Software"
+blurb = "Billy Blaze is eight years old, builds spaceships, and has to rescue the Oracle Keepers from the Shikadi. Smooth side-scrolling on a 286."
+
 [sources.primary]
 role = "primary"
 install_type = "floppyinstall"

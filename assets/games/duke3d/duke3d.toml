@@ -12,6 +12,10 @@ rank = 10
 license = "shareware"
 recipe_status = "done"
 
+year = 1996
+publisher = "3D Realms"
+blurb = "Aliens invaded Los Angeles and Duke has opinions about it. Destructible bars, working pool tables, and a mirror that knows you are looking."
+
 [sources.primary]
 role = "primary"
 install_type = "unzipinstall"

@@ -11,6 +11,10 @@ version = "1.1"
 license = "freeware"
 recipe_status = "done"
 
+year = 1993
+publisher = "Software Creations"
+blurb = "Thor wanders three episodes of top-down puzzles, collecting items and pushing blocks. Ron Davis released it as freeware years later."
+
 [sources.primary]
 role = "primary"
 install_type = "unzip"

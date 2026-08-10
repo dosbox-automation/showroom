@@ -262,6 +262,17 @@ std::optional<GameDefinition> GameDefinition::fromTomlString(std::string_view te
     }
     game.version_ = parser.optionalString(root, "version").value_or("");
 
+    if (const auto* year_node = root.get("year"); year_node != nullptr) {
+        const auto year_val = year_node->value<std::int64_t>();
+        if (!year_val || *year_val < 1970 || *year_val > 2100) {
+            error = "definition: year out of range";
+            return std::nullopt;
+        }
+        game.year_ = static_cast<int>(*year_val);
+    }
+    game.publisher_ = parser.optionalString(root, "publisher").value_or("");
+    game.blurb_ = parser.optionalString(root, "blurb").value_or("");
+
     std::string license_name;
     if (!parser.requireString(root, "license", license_name, "definition")) {
         error = parser.error;

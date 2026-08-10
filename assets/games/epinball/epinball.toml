@@ -11,6 +11,10 @@ version = "2.1"
 license = "shareware"
 recipe_status = "done"
 
+year = 1993
+publisher = "Epic MegaGames"
+blurb = "Eight pinball tables, from medieval castles to deep sea trenches. Started as shareware, later sold as a full package."
+
 [sources.primary]
 role = "primary"
 install_type = "exeinstall"

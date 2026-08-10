@@ -13,6 +13,10 @@ rank = 11
 license = "freeware"
 recipe_status = "done"
 
+year = 1995
+publisher = "Interactive Binary Illusions"
+blurb = "Pilot Joe King crashes in the Amazon and walks straight into a mad scientist's dinosaur problem. A point-and-click adventure that does not take itself seriously."
+
 [sources.primary]
 role = "primary"
 install_type = "floppyinstall"

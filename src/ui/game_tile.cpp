@@ -43,6 +43,37 @@ QPixmap loadScreenshot(const std::filesystem::path& assets_dir,
     return pixmap;
 }
 
+QString buildTooltip(const GameDefinition& definition)
+{
+    const QString title = QString::fromStdString(definition.title()).toHtmlEscaped();
+    const QString publisher =
+            QString::fromStdString(definition.publisher()).toHtmlEscaped();
+    const QString blurb = QString::fromStdString(definition.blurb()).toHtmlEscaped();
+
+    QString tip = QStringLiteral("<nobr><b>") + title + QStringLiteral("</b>");
+
+    if (definition.year().has_value() || !publisher.isEmpty()) {
+        tip += QStringLiteral(" (");
+        if (definition.year().has_value()) {
+            tip += QString::number(*definition.year());
+        }
+        if (definition.year().has_value() && !publisher.isEmpty()) {
+            tip += QStringLiteral(", ");
+        }
+        if (!publisher.isEmpty()) {
+            tip += publisher;
+        }
+        tip += QStringLiteral(")");
+    }
+    tip += QStringLiteral("</nobr>");
+
+    if (!blurb.isEmpty()) {
+        tip += QStringLiteral("<p>") + blurb + QStringLiteral("</p>");
+    }
+
+    return tip;
+}
+
 } // namespace
 
 GameTile::GameTile(const GameDefinition& definition,
@@ -54,7 +85,7 @@ GameTile::GameTile(const GameDefinition& definition,
 {
     setAttribute(Qt::WA_Hover, true);
     setMouseTracking(true);
-    setToolTip(QString::fromStdString(definition.title()));
+    setToolTip(buildTooltip(definition));
 
     legend_ = new LegendBar(this);
     legend_->setLicenseLabel(licenseLabel(definition.license()));

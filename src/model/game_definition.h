@@ -85,6 +85,9 @@ public:
     const std::string& version() const { return version_; }
     License license() const { return license_; }
     RecipeStatus recipeStatus() const { return recipe_status_; }
+    std::optional<int> year() const { return year_; }
+    const std::string& publisher() const { return publisher_; }
+    const std::string& blurb() const { return blurb_; }
     const std::vector<GameSource>& sources() const { return sources_; }
     const DosboxSettings& dosbox() const { return dosbox_; }
     const LaunchSettings& launch() const { return launch_; }
@@ -111,6 +114,9 @@ private:
     std::string version_;
     License license_ = License::Shareware;
     RecipeStatus recipe_status_ = RecipeStatus::Todo;
+    std::optional<int> year_;
+    std::string publisher_;
+    std::string blurb_;
     std::vector<GameSource> sources_;
     DosboxSettings dosbox_;
     LaunchSettings launch_;

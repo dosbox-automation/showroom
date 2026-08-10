@@ -11,6 +11,10 @@ version = "1.666"
 license = "shareware"
 recipe_status = "done"
 
+year = 1993
+publisher = "id Software"
+blurb = "Demons got into the Mars base. You have a shotgun. The game that sold more PCs than any spreadsheet ever did."
+
 [sources.primary]
 role = "primary"
 install_type = "floppyinstall"

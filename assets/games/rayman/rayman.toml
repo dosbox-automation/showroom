@@ -10,6 +10,10 @@ rank = 9
 license = "demo"
 recipe_status = "done"
 
+year = 1995
+publisher = "Ubisoft"
+blurb = "A limbless hero throws his fists as projectiles and glides with his hair. Hand-drawn art from top to bottom, and harder than it looks."
+
 [sources.primary]
 role = "primary"
 install_type = "unzip"

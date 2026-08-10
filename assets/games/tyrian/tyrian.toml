@@ -11,6 +11,10 @@ version = "2"
 license = "freeware"
 recipe_status = "done"
 
+year = 1995
+publisher = "Epic MegaGames"
+blurb = "A scrolling shooter with a proper story mode, a deep upgrade tree, and more weapon combinations than most RPGs. Jason Emery released it as freeware in 2004."
+
 [sources.primary]
 role = "primary"
 install_type = "exeinstall"

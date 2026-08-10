@@ -216,6 +216,53 @@ TEST(GameTileInput, clicking_a_tile_with_no_recipe_does_nothing)
     EXPECT_EQ(spy.count(), 0);
 }
 
+TEST(GameTileTooltip, includes_title_year_publisher_and_blurb)
+{
+    const auto tile = makeTile("doom");
+    const QString tip = tile->toolTip();
+
+    EXPECT_TRUE(tip.contains("<nobr><b>DOOM</b>")) << tip.toStdString();
+    EXPECT_TRUE(tip.contains("1993")) << tip.toStdString();
+    EXPECT_TRUE(tip.contains("id Software")) << tip.toStdString();
+    EXPECT_TRUE(tip.contains("shotgun")) << tip.toStdString();
+}
+
+TEST(GameTileTooltip, html_escapes_special_characters_in_the_title)
+{
+    std::string error;
+    const auto definition = GameDefinition::fromTomlString(R"(slug = "probe"
+title = "Probe <script>"
+rank = 1
+license = "shareware"
+year = 1999
+publisher = "Foo & Bar"
+blurb = "A \"tricky\" game."
+
+[sources.primary]
+url = "https://example.invalid/probe.zip"
+
+[dosbox]
+machine = "svga_s3"
+cpu_cycles = 3000
+cpu_cycles_protected = 3000
+
+[launch]
+executable = ""
+
+[install]
+max_runtime_seconds = 60
+)",
+                                                           error);
+    ASSERT_TRUE(definition) << error;
+
+    const GameTile tile(*definition, gamesDir() / "doom");
+    const QString tip = tile.toolTip();
+
+    EXPECT_TRUE(tip.contains("&lt;script&gt;")) << tip.toStdString();
+    EXPECT_TRUE(tip.contains("Foo &amp; Bar")) << tip.toStdString();
+    EXPECT_TRUE(tip.contains("&quot;tricky&quot;")) << tip.toStdString();
+}
+
 TEST(GameTileAssets, every_bundled_game_has_both_screenshots_on_disk)
 {
     // The tile survives a missing capture by leaving the image empty,

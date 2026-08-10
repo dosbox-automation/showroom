@@ -14,6 +14,10 @@ recipe_status = "done"
 # Swapped 2026-08-02: the 1994 Apogee shareware with its real INSTALL.EXE
 # is the primary (visible install, original timestamps); the pre-installed
 # dosbox-ready dump demotes to mirror.
+year = 1994
+publisher = "Apogee Software"
+blurb = "Kart racing with animals and hedgehog projectiles. Split-screen multiplayer, adjustable opponents, and exactly the game you think it is."
+
 [sources.primary]
 role = "primary"
 install_type = "unzipinstall"

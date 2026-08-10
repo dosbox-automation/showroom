@@ -11,6 +11,10 @@ version = "1.08sh"
 license = "demo"
 recipe_status = "done"
 
+year = 1995
+publisher = "Blizzard Entertainment"
+blurb = "The sequel added naval combat, eight-player multiplayer and a map editor to the original Warcraft formula. The one that put Blizzard on the map."
+
 [sources.primary]
 role = "primary"
 install_type = "isoinstall"

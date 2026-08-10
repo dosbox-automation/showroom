@@ -11,6 +11,10 @@ version = "1"
 license = "shareware"
 recipe_status = "done"
 
+year = 1994
+publisher = "Raven Software"
+blurb = "A Sidhe elf fights through the City of the Damned on the Doom engine, collecting wand charges instead of bullets. Raven Software's take on the formula."
+
 [sources.primary]
 role = "primary"
 install_type = "isoinstall"

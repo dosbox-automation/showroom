@@ -98,6 +98,9 @@ TEST(GameDefinition, parses_the_real_doom_definition)
     EXPECT_EQ(doom->version(), "1.666");
     EXPECT_EQ(doom->license(), License::Shareware);
     EXPECT_EQ(doom->recipeStatus(), RecipeStatus::Done);
+    EXPECT_EQ(doom->year(), 1993);
+    EXPECT_EQ(doom->publisher(), "id Software");
+    EXPECT_FALSE(doom->blurb().empty());
     EXPECT_EQ(doom->dosbox().machine, "svga_s3");
     EXPECT_EQ(doom->dosbox().cpu_cycles, 12000);
     EXPECT_EQ(doom->dosbox().cpu_cycles_protected, 12000);
@@ -125,6 +128,51 @@ TEST(GameDefinition, parses_a_minimal_definition)
     ASSERT_TRUE(game.has_value()) << error;
     EXPECT_EQ(game->slug(), "doom");
     EXPECT_EQ(game->sources().size(), 1u);
+}
+
+TEST(GameDefinition, reads_tooltip_metadata)
+{
+    std::string error;
+    const auto game = GameDefinition::fromTomlString(
+            withReplacement("license = \"shareware\"",
+                            "license = \"shareware\"\n"
+                            "year = 1993\n"
+                            "publisher = \"id Software\"\n"
+                            "blurb = \"Demons on Mars.\""),
+            error);
+
+    ASSERT_TRUE(game.has_value()) << error;
+    EXPECT_EQ(game->year(), 1993);
+    EXPECT_EQ(game->publisher(), "id Software");
+    EXPECT_EQ(game->blurb(), "Demons on Mars.");
+}
+
+TEST(GameDefinition, tooltip_metadata_is_optional)
+{
+    std::string error;
+    const auto game = GameDefinition::fromTomlString(minimalToml(), error);
+
+    ASSERT_TRUE(game.has_value()) << error;
+    EXPECT_FALSE(game->year().has_value());
+    EXPECT_TRUE(game->publisher().empty());
+    EXPECT_TRUE(game->blurb().empty());
+}
+
+TEST(GameDefinition, rejects_a_year_outside_the_valid_range)
+{
+    std::string error;
+    EXPECT_FALSE(GameDefinition::fromTomlString(
+                         withReplacement("license = \"shareware\"",
+                                         "license = \"shareware\"\nyear = 1800"),
+                         error)
+                         .has_value());
+    EXPECT_NE(error.find("year"), std::string::npos) << error;
+
+    EXPECT_FALSE(GameDefinition::fromTomlString(
+                         withReplacement("license = \"shareware\"",
+                                         "license = \"shareware\"\nyear = 2200"),
+                         error)
+                         .has_value());
 }
 
 TEST(GameDefinition, reads_an_optional_source_size)

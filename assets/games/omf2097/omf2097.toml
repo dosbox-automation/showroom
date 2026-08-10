@@ -11,6 +11,10 @@ version = "2.1"
 license = "freeware"
 recipe_status = "done"
 
+year = 1994
+publisher = "Epic MegaGames"
+blurb = "Giant robots in arena combat, controlled by pilots who collect prize money between fights to upgrade their machine. The tournament economy is the real draw."
+
 [sources.primary]
 role = "primary"
 install_type = "exeinstall"

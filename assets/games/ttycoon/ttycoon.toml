@@ -10,6 +10,10 @@ rank = 5
 license = "demo"
 recipe_status = "done"
 
+year = 1994
+publisher = "MicroProse"
+blurb = "Build a transport network across a century of trains, trucks, ships and planes. Chris Sawyer wrote the whole thing in x86 assembly."
+
 [sources.primary]
 role = "primary"
 install_type = "unzip"
