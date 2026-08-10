@@ -167,7 +167,7 @@ void GameTile::resizeEvent(QResizeEvent* event)
 
 void GameTile::enterEvent(QEnterEvent* event)
 {
-    hovered_ = true;
+    hovered_ = !locked_;
     updateScaledPixmap();
     update();
     QWidget::enterEvent(event);
@@ -181,11 +181,24 @@ void GameTile::leaveEvent(QEvent* event)
     QWidget::leaveEvent(event);
 }
 
+void GameTile::setLocked(bool locked)
+{
+    if (locked_ == locked) {
+        return;
+    }
+    locked_ = locked;
+    if (locked_) {
+        hovered_ = false;
+    }
+    update();
+}
+
 void GameTile::mousePressEvent(QMouseEvent* event)
 {
     // Clicking the picture is the same intent as clicking the button,
     // and a state with no action ignores both.
-    if (event->button() == Qt::LeftButton && actionFor(state_) != TileAction::None) {
+    if (!locked_ && event->button() == Qt::LeftButton
+        && actionFor(state_) != TileAction::None) {
         emit actionTriggered(slug_);
         event->accept();
         return;
@@ -225,23 +238,6 @@ void GameTile::paintEvent(QPaintEvent* /*event*/)
             painter.fillRect(rect(), theme::kOverlayScrim);
         }
 
-        if (showsProgress(state_)) {
-            const int diameter = 26;
-            const QRectF ring((width() - diameter) / 2.0,
-                              height() / 2.0 - diameter - 6,
-                              diameter,
-                              diameter);
-            QPen track(theme::kProgressTrack);
-            track.setWidth(3);
-            painter.setPen(track);
-            painter.drawEllipse(ring);
-
-            QPen arc(theme::kAmber);
-            arc.setWidth(3);
-            painter.setPen(arc);
-            painter.drawArc(ring, 90 * 16, -progress_percent_ * 360 * 16 / 100);
-        }
-
         painter.setFont(theme::monospaceFont(10, QFont::Bold));
         const QRect text_area = rect().adjusted(10, 0, -10, -theme::kLegendHeightPx);
 
@@ -256,14 +252,18 @@ void GameTile::paintEvent(QPaintEvent* /*event*/)
     }
 
     if (showsProgress(state_)) {
-        const QRect track(0,
-                          height() - theme::kProgressHeightPx,
-                          width(),
-                          theme::kProgressHeightPx);
+        // Along the top edge: the legend already owns the bottom, and a
+        // full-width bar reads as progress without a phone idiom.
+        const QRect track(0, 0, width(), theme::kProgressHeightPx);
         painter.fillRect(track, theme::kProgressTrack);
         QRect fill = track;
-        fill.setWidth(track.width() * progress_percent_ / 100);
+        fill.setWidth(std::max(track.width() * progress_percent_ / 100,
+                               theme::kProgressStartedSliverPx));
         painter.fillRect(fill, theme::kAmber);
+    }
+
+    if (locked_) {
+        painter.fillPath(frame, theme::kLockedScrim);
     }
 
     painter.setClipping(false);

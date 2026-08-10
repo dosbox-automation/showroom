@@ -185,6 +185,7 @@ MainWindow::MainWindow(const GameCatalog& catalog,
                 &InstallRunner::succeeded,
                 this,
                 [this](const QString& slug) {
+                    unlockTiles();
                     if (GameTile* tile = grid_->tileFor(slug)) {
                         tile->setState(TileState::Ready);
                     }
@@ -204,6 +205,7 @@ MainWindow::MainWindow(const GameCatalog& catalog,
                               "install of %s failed: %s",
                               slug.toStdString().c_str(),
                               reason.toStdString().c_str());
+                    unlockTiles();
                     if (GameTile* tile = grid_->tileFor(slug)) {
                         tile->setState(TileState::Downloaded);
                     }
@@ -424,6 +426,7 @@ void MainWindow::startDownload(const GameDefinition& game)
     }
 
     downloading_slug_ = game.slug();
+    pushBusyCursor();
     if (GameTile* tile = grid_->tileFor(QString::fromStdString(game.slug()))) {
         tile->setState(TileState::Downloading);
         tile->setProgress(0);
@@ -472,10 +475,49 @@ void MainWindow::startInstall(const GameDefinition& game)
         tile->setState(TileState::Installing);
         tile->setProgress(0);
     }
+    lockTilesForInstall(QString::fromStdString(game.slug()));
+}
+
+void MainWindow::lockTilesForInstall(const QString& installing_slug)
+{
+    for (const auto& game : catalog_) {
+        const auto slug = QString::fromStdString(game.slug());
+        if (GameTile* tile = grid_->tileFor(slug)) {
+            tile->setLocked(slug != installing_slug);
+        }
+    }
+}
+
+void MainWindow::unlockTiles()
+{
+    for (const auto& game : catalog_) {
+        if (GameTile* tile = grid_->tileFor(QString::fromStdString(game.slug()))) {
+            tile->setLocked(false);
+        }
+    }
+}
+
+void MainWindow::pushBusyCursor()
+{
+    if (busy_cursor_pushed_) {
+        return;
+    }
+    QGuiApplication::setOverrideCursor(Qt::BusyCursor);
+    busy_cursor_pushed_ = true;
+}
+
+void MainWindow::popBusyCursor()
+{
+    if (!busy_cursor_pushed_) {
+        return;
+    }
+    QGuiApplication::restoreOverrideCursor();
+    busy_cursor_pushed_ = false;
 }
 
 void MainWindow::setDownloadingTileState(TileState state)
 {
+    popBusyCursor();
     if (state == TileState::NotDownloaded && connectivity_ != nullptr
         && !connectivity_->isOnline()) {
         state = TileState::OfflineNotDownloaded;

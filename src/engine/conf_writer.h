@@ -41,12 +41,19 @@ public:
 
     // Floppy and exe install confs land in the extracts dir: the
     // conf's directory is an image root, which is what lets the
-    // recipe's bare-name drive_swap pass mount policy. Iso install
-    // confs land at the cache base instead - the anchor must cover the
-    // ISO, which stays in downloads/ and is never copied.
+    // recipe's bare-name drive_swap pass mount policy. Confs for games
+    // whose download IS the medium land at the cache base instead - the
+    // anchor must cover downloads/, where the medium stays.
     static std::optional<std::filesystem::path> writeInstallConf(
             const GameDefinition& game, const std::filesystem::path& cache_base,
             std::string& error);
+
+    // True when the pinned download is itself the install medium - a CD
+    // image, or a bare floppy image such as ckeen4's. Such a download
+    // mounts where it lies, so there is nothing to extract and the conf
+    // anchor moves to the cache base to reach it.
+    static bool downloadIsMedium(const GameDefinition& game,
+                                 const std::filesystem::path& cache_base);
 
     // Where an archive-based install unpacks; iso installs have no
     // extraction and mount the download directly.

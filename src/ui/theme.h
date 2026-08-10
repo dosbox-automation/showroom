@@ -41,12 +41,19 @@ inline const QColor kRed{0xff, 0x74, 0x6e};
 inline const QColor kLegendGradientBottom{9, 9, 12, 235}; // .92
 inline const QColor kLegendGradientMiddle{9, 9, 12, 190}; // ours, see legend_bar.cpp
 inline const QColor kOverlayScrim{8, 9, 12, 189};         // .74
-inline const QColor kProgressTrack{255, 255, 255, 31};    // .12
+// Lighter than the overlay scrim: a locked tile must still read as its
+// own game, only clearly out of reach.
+inline const QColor kLockedScrim{8, 9, 12, 140};       // .55
+inline const QColor kProgressTrack{255, 255, 255, 90}; // .35
 
 inline constexpr int kTileCornerRadiusPx = 10;
 inline constexpr int kLegendHeightPx = 30;
 inline constexpr int kLegendPaddingXPx = 10;
 inline constexpr int kProgressHeightPx = 5;
+// A started transfer paints at least this much, so the click has a
+// visible consequence before the first byte lands. Tied to the corner
+// radius because the rounded clip swallows anything narrower.
+inline constexpr int kProgressStartedSliverPx = kTileCornerRadiusPx + 4;
 inline constexpr int kStatusDotPx = 6;
 inline constexpr int kStatusDotRadiusPx = 2;
 inline constexpr int kActionIconPx = 12;

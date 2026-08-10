@@ -73,6 +73,17 @@ private:
     void startDownload(const GameDefinition& game);
     void startInstall(const GameDefinition& game);
     void setDownloadingTileState(TileState state);
+
+    // Every tile but the installing one, which keeps its progress live.
+    void lockTilesForInstall(const QString& installing_slug);
+    void unlockTiles();
+
+    // Qt stacks override cursors, so the push is guarded: a second push
+    // or a missed pop would leave the busy shape on for the whole run.
+    void pushBusyCursor();
+    void popBusyCursor();
+
+    bool busy_cursor_pushed_ = false;
     void applyOnlineState(bool online);
 
     // Fixed for the life of the window: dragged to a smaller monitor it

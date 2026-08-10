@@ -179,6 +179,26 @@ std::optional<std::filesystem::path> firstFloppyImage(
     return *std::min_element(images.begin(), images.end());
 }
 
+// Absence is not an error: a floppy title whose download is an archive
+// keeps its images in the extracts dir instead.
+std::optional<std::filesystem::path> downloadedFloppyImage(
+        const std::filesystem::path& downloads_dir)
+{
+    std::error_code ec;
+    std::vector<std::filesystem::path> images;
+    if (std::filesystem::is_directory(downloads_dir, ec)) {
+        for (const auto& entry : std::filesystem::directory_iterator(downloads_dir, ec)) {
+            if (entry.is_regular_file(ec) && isFloppyImageName(entry.path().filename())) {
+                images.push_back(entry.path());
+            }
+        }
+    }
+    if (images.empty()) {
+        return std::nullopt;
+    }
+    return *std::min_element(images.begin(), images.end());
+}
+
 std::optional<std::filesystem::path> firstIsoImage(
         const std::filesystem::path& downloads_dir, std::string& error)
 {
@@ -334,7 +354,10 @@ std::optional<std::string> ConfWriter::renderInstallConf(
 
     conf << "[autoexec]\n";
     if (*install_type == InstallType::FloppyInstall) {
-        const auto image = firstFloppyImage(extracts_dir, error);
+        auto image = downloadedFloppyImage(cache_base / "downloads" / game.slug());
+        if (!image) {
+            image = firstFloppyImage(extracts_dir, error);
+        }
         if (!image) {
             return std::nullopt;
         }
@@ -355,6 +378,25 @@ std::optional<std::string> ConfWriter::renderInstallConf(
     return conf.str();
 }
 
+bool ConfWriter::downloadIsMedium(const GameDefinition& game,
+                                  const std::filesystem::path& cache_base)
+{
+    if (game.sources().empty()) {
+        return false;
+    }
+    const auto install_type = game.sources().front().install_type;
+    if (!install_type) {
+        return false;
+    }
+    // An iso source is always the medium; a floppy source is one only
+    // when the pinned file is the image rather than an archive of them.
+    if (*install_type == InstallType::IsoInstall) {
+        return true;
+    }
+    return *install_type == InstallType::FloppyInstall
+        && downloadedFloppyImage(cache_base / "downloads" / game.slug()).has_value();
+}
+
 std::optional<std::filesystem::path> ConfWriter::writeInstallConf(
         const GameDefinition& game, const std::filesystem::path& cache_base,
         std::string& error)
@@ -363,8 +405,9 @@ std::optional<std::filesystem::path> ConfWriter::writeInstallConf(
     if (!conf) {
         return std::nullopt;
     }
-    const auto target_dir = game.wantsCdDrive() ? cache_base
-                                                : extractsDir(cache_base, game.slug());
+    const auto target_dir = downloadIsMedium(game, cache_base)
+                                  ? cache_base
+                                  : extractsDir(cache_base, game.slug());
     return writeConfFile(target_dir, "install.conf", *conf, error);
 }
 

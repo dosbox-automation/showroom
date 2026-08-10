@@ -155,7 +155,22 @@ TEST(GameTilePainting, hovering_swaps_the_title_shot_for_the_gameplay_shot)
     EXPECT_EQ(renderTile(*tile), resting);
 }
 
-TEST(GameTilePainting, a_working_state_draws_its_progress_across_the_bottom)
+TEST(GameTilePainting, a_started_transfer_shows_a_sliver_before_any_progress_arrives)
+{
+    // The click turns the cursor busy; a bar still empty at that moment
+    // reads as nothing having happened. The transfer HAS started, so
+    // saying so is honest rather than a fake animation.
+    const auto tile = makeTile("doom");
+    tile->setState(TileState::NotDownloaded);
+    tile->setState(TileState::Downloading);
+    tile->setProgress(0);
+
+    // Sampled clear of the 10px corner radius, which eats anything
+    // narrower than itself.
+    EXPECT_EQ(renderTile(*tile).pixelColor(12, 3), theme::kAmber);
+}
+
+TEST(GameTilePainting, a_working_state_draws_its_progress_across_the_top)
 {
     const auto tile = makeTile("doom");
     tile->setState(TileState::NotDownloaded);
@@ -166,9 +181,9 @@ TEST(GameTilePainting, a_working_state_draws_its_progress_across_the_bottom)
     tile->setProgress(90);
     const QImage late = renderTile(*tile);
 
-    // Three quarters of the way along the bottom row: filled at 90 per
-    // cent, still track at 10.
-    const int y = tile->height() - 2;
+    // Three quarters of the way along the top row: filled at 90 per
+    // cent, still track at 10. The bottom belongs to the legend.
+    const int y = 1;
     const int x = tile->width() * 3 / 4;
     EXPECT_NE(early.pixelColor(x, y), late.pixelColor(x, y));
 }

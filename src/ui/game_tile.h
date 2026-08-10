@@ -33,7 +33,13 @@ public:
     void setState(TileState state);
     void setProgress(int percent);
 
+    // Locked while another game installs: the engine port is shared, so
+    // only the installing tile stays live. Orthogonal to the state
+    // machine - a locked tile keeps the state it had.
+    void setLocked(bool locked);
+
     TileState state() const { return state_; }
+    bool isLocked() const { return locked_; }
     int progress() const { return progress_percent_; }
     const QString& slug() const { return slug_; }
 
@@ -69,6 +75,7 @@ private:
     TileState state_ = TileState::NotDownloaded;
     int progress_percent_ = 0;
     bool hovered_ = false;
+    bool locked_ = false;
 
     LegendBar* legend_ = nullptr;
 };

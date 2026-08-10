@@ -218,9 +218,10 @@ bool InstallRunner::startInstall(const GameDefinition& game, std::string& error)
         return false;
     }
 
-    // The CD image is the medium: it mounts from downloads/ in place,
-    // so an iso install has nothing to extract.
-    if (game.sources().front().install_type != InstallType::IsoInstall) {
+    // A download that is the medium mounts from downloads/ in place, so
+    // there is nothing to extract - and handing a disk image to the
+    // extractor fails outright (aug-p0kd).
+    if (!ConfWriter::downloadIsMedium(game, cache_base_)) {
         const bool extracted = std::filesystem::is_directory(extracts_dir_, ec)
                             && std::filesystem::directory_iterator(extracts_dir_, ec)
                                        != std::filesystem::directory_iterator();

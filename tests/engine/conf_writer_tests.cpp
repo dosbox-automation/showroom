@@ -496,6 +496,59 @@ TEST_F(InstallConfDir, non_image_files_are_not_mounted_as_floppies)
     EXPECT_EQ(conf->find("README.TXT"), std::string::npos);
 }
 
+TEST_F(InstallConfDir, floppy_install_mounts_a_downloaded_disk_image_in_place)
+{
+    // A download that is itself the disk is the medium, like a CD image:
+    // nothing to extract, and it mounts where it lies.
+    const auto game = parseOrDie(doomLikeToml());
+    addDownloadedFile("game.img");
+    std::string error;
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
+    ASSERT_TRUE(conf) << error;
+
+    const auto image = (dir_ / "downloads" / "doom" / "game.img").string();
+    EXPECT_TRUE(hasLine(*conf, "mount a \"" + image + "\" -t floppy"));
+}
+
+TEST_F(InstallConfDir, an_archive_download_still_mounts_the_extracted_disk_images)
+{
+    // Disk sets ship inside an archive; those images keep the extracts
+    // anchor, which is what legalizes drive_swap's bare names.
+    const auto game = parseOrDie(doomLikeToml());
+    addDownloadedFile("doom.7z");
+    addExtractedFile("disk1.ima");
+    std::string error;
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
+    ASSERT_TRUE(conf) << error;
+
+    EXPECT_TRUE(
+            hasLine(*conf,
+                    "mount a \"" + (extracts_ / "disk1.ima").string() + "\" -t floppy"));
+}
+
+TEST_F(InstallConfDir, downloaded_disk_image_matching_ignores_case_and_other_files)
+{
+    const auto game = parseOrDie(doomLikeToml());
+    addDownloadedFile("GAME.IMG");
+    addDownloadedFile("readme.txt");
+    std::string error;
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
+    ASSERT_TRUE(conf) << error;
+    EXPECT_NE(conf->find("GAME.IMG"), std::string::npos);
+    EXPECT_EQ(conf->find("readme.txt"), std::string::npos);
+}
+
+TEST_F(InstallConfDir, write_lands_the_downloaded_floppy_install_conf_at_the_cache_base)
+{
+    // Same reason as the iso case: the anchor has to cover downloads/.
+    const auto game = parseOrDie(doomLikeToml());
+    addDownloadedFile("game.img");
+    std::string error;
+    const auto written = ConfWriter::writeInstallConf(game, dir_, error);
+    ASSERT_TRUE(written) << error;
+    EXPECT_EQ(*written, dir_ / "install.conf");
+}
+
 TEST_F(InstallConfDir, floppy_install_without_any_floppy_image_is_refused)
 {
     const auto game = parseOrDie(doomLikeToml());

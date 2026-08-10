@@ -772,6 +772,55 @@ TEST_F(DownloadFixture, progress_fills_the_downloading_tile)
     EXPECT_EQ(tile->progress(), 50);
 }
 
+TEST_F(DownloadFixture, a_running_download_shows_the_busy_cursor)
+{
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader);
+    ASSERT_EQ(QGuiApplication::overrideCursor(), nullptr);
+
+    QTest::mouseClick(window.grid()->tileFor("delta"), Qt::LeftButton);
+
+    ASSERT_NE(QGuiApplication::overrideCursor(), nullptr);
+    EXPECT_EQ(QGuiApplication::overrideCursor()->shape(), Qt::BusyCursor);
+    downloader.simulateFinished(QStringLiteral("delta.zip"));
+}
+
+TEST_F(DownloadFixture, every_download_ending_restores_the_cursor)
+{
+    // Finish, failure and cancel are three separate signals; a cursor
+    // left pushed on any of them sticks for the rest of the run.
+    enum class Ending { Finished, Failed, Cancelled };
+    for (const auto ending : {Ending::Finished, Ending::Failed, Ending::Cancelled}) {
+        FakeLauncher launcher;
+        FakeDownloader downloader;
+        ScriptedWindow window(two_games_,
+                              assetsDir(),
+                              settings(),
+                              sizer(),
+                              &launcher,
+                              &downloader);
+        QTest::mouseClick(window.grid()->tileFor("delta"), Qt::LeftButton);
+        ASSERT_NE(QGuiApplication::overrideCursor(), nullptr);
+
+        switch (ending) {
+        case Ending::Finished:
+            downloader.simulateFinished(QStringLiteral("d.zip"));
+            break;
+        case Ending::Failed: downloader.simulateFailed(QStringLiteral("404")); break;
+        case Ending::Cancelled: downloader.simulateCancelled(); break;
+        }
+
+        EXPECT_EQ(QGuiApplication::overrideCursor(), nullptr)
+                << "ending " << static_cast<int>(ending);
+    }
+}
+
 TEST_F(DownloadFixture, a_finished_download_lands_on_downloaded)
 {
     FakeLauncher launcher;
@@ -1154,6 +1203,87 @@ TEST_F(InstallFixture, a_downloaded_archive_boots_the_tile_at_downloaded)
 
     EXPECT_EQ(window.grid()->tileFor("alpha")->state(), TileState::Downloaded);
     EXPECT_EQ(window.grid()->tileFor("beta")->state(), TileState::Ready);
+}
+
+TEST_F(InstallFixture, a_running_install_locks_every_other_tile)
+{
+    // A second engine would collide on the shared port, so the grid says
+    // so instead of swallowing the click (aug-ep52).
+    FakeLauncher launcher;
+    FakeInstallRunner runner;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          nullptr,
+                          nullptr,
+                          &runner);
+
+    QTest::mouseClick(window.grid()->tileFor("alpha"), Qt::LeftButton);
+
+    EXPECT_TRUE(window.grid()->tileFor("beta")->isLocked());
+    EXPECT_FALSE(window.grid()->tileFor("alpha")->isLocked());
+}
+
+TEST_F(InstallFixture, a_succeeded_install_unlocks_the_tiles)
+{
+    FakeLauncher launcher;
+    FakeInstallRunner runner;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          nullptr,
+                          nullptr,
+                          &runner);
+    QTest::mouseClick(window.grid()->tileFor("alpha"), Qt::LeftButton);
+
+    runner.simulateSucceeded("alpha");
+
+    EXPECT_FALSE(window.grid()->tileFor("beta")->isLocked());
+}
+
+TEST_F(InstallFixture, a_failed_install_unlocks_the_tiles)
+{
+    // The lock must lift on both exits or the grid stays dead.
+    FakeLauncher launcher;
+    FakeInstallRunner runner;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          nullptr,
+                          nullptr,
+                          &runner);
+    QTest::mouseClick(window.grid()->tileFor("alpha"), Qt::LeftButton);
+
+    runner.simulateFailed("alpha", "boom");
+
+    EXPECT_FALSE(window.grid()->tileFor("beta")->isLocked());
+}
+
+TEST_F(InstallFixture, a_locked_tile_ignores_its_click)
+{
+    FakeLauncher launcher;
+    FakeInstallRunner runner;
+    ScriptedWindow window(two_games_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          nullptr,
+                          nullptr,
+                          &runner);
+    QTest::mouseClick(window.grid()->tileFor("alpha"), Qt::LeftButton);
+    runner.started_slugs.clear();
+
+    QTest::mouseClick(window.grid()->tileFor("beta"), Qt::LeftButton);
+
+    EXPECT_TRUE(runner.started_slugs.empty());
+    EXPECT_TRUE(launcher.launched_slugs.empty());
 }
 
 TEST_F(InstallFixture, clicking_a_downloaded_tile_starts_the_install)

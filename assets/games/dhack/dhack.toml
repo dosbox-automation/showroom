@@ -36,9 +36,11 @@ midi_device = "fluidsynth"
 
 # HAND-FILLED. Pre-extracted AESOP demo; HACK.BAT orchestrates the
 # aesop/maze loop and creates savegame/ itself (probe 2026-08-02).
+# The archive carries its own HACKDEMO/ top level, so nothing lands at
+# the drive root (aug-dos6).
 [launch]
 executable = "HACK.BAT"
-working_dir = ""
+working_dir = "HACKDEMO"
 setup_exe = ""
 
 [screenshots]
@@ -51,5 +53,5 @@ max_runtime_seconds = 120
 # HAND-FILLED. Files that must exist after a successful install,
 # checked before every launch. Sound config files vary - leave them out.
 [install.expected_files]
-"AESOP.EXE" = { size = 140240 }
-"HACK.RES"  = { size = 1269239 }
+"HACKDEMO/AESOP.EXE" = { size = 140240 }
+"HACKDEMO/HACK.RES"  = { size = 1269239 }
