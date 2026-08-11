@@ -31,8 +31,8 @@ sha256 = "3081ec839803242a240b6ff22d70c983117ef1345974a864db6cdaf340c97d46"
 # settings. Tune per game where the game needs it.
 [dosbox]
 machine = "svga_s3"
-cpu_cycles = 12000
-cpu_cycles_protected = 12000
+cpu_cycles = 30000
+cpu_cycles_protected = 30000
 
 [dosbox.sound]
 sblaster_type = "sb16"

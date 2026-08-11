@@ -14,9 +14,9 @@
 
 local function press(key)
     dosbox.key(key, true)
-    dosbox.wait_frames(6)
+    dosbox.wait_frames(5)
     dosbox.key(key, false)
-    dosbox.wait_frames(30)
+    dosbox.wait_frames(5)
 end
 
 local function repeatKey(key, count)
@@ -42,53 +42,53 @@ local function seconds(count)
     end
 end
 
-dosbox.wait_frames(60)
+dosbox.wait_frames(10)
 dosbox.type("d:\n")
-dosbox.wait_frames(30)
+dosbox.wait_frames(10)
 dosbox.type("INSTALL\n")
 dosbox.output["progress"] = "5"
 
-seconds(8)
+seconds(3)
 press("KBD_enter")
-seconds(4)
+seconds(2)
 -- C:\WAR2 is offered and is where the launch config expects the game.
 press("KBD_enter")
 dosbox.output["progress"] = "20"
 
 -- The copy runs about 30 s at 12000 cycles; the success dialog then
 -- waits for a keypress, so overshooting costs nothing.
-seconds(80)
+seconds(15)
 press("KBD_enter")
 dosbox.output["progress"] = "55"
 
-seconds(6)
+seconds(2)
 pickFromList(3)
-seconds(4)
+seconds(1)
 press("KBD_enter")
-seconds(4)
+seconds(1)
 press("KBD_enter")
-seconds(8)
+seconds(2)
 press("KBD_enter")
 dosbox.output["progress"] = "75"
 
-seconds(6)
+seconds(2)
 -- General MIDI drives the engine's MPU-401; the rest of the list is
 -- FM synthesis.
 pickFromList(1)
-seconds(4)
+seconds(1)
 press("KBD_enter")
-seconds(4)
+seconds(1)
 press("KBD_enter")
-seconds(8)
+seconds(3)
 press("KBD_enter")
 dosbox.output["progress"] = "90"
 
 -- The readme viewer is the last screen before setup exits to DOS.
-seconds(6)
+seconds(2)
 press("KBD_enter")
 
 for _ = 1, 6 do
-    if dosbox.wait_for_text("C:\\WAR2>", 1500) then
+    if dosbox.wait_for_text("C:\\WAR2>", 500) then
         dosbox.output["progress"] = "100"
         dosbox.output["install_complete"] = "yes"
         return
