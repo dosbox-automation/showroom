@@ -46,6 +46,46 @@
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "CMAKE_BUILD_TYPE": "Release"
       }
+    },
+    {
+      "name": "release-windows-vs2022",
+      "displayName": "Release (Windows, VS2022 ClangCL)",
+      "description": "Configure for Release build with vcpkg static libs and static CRT",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build/release-windows-vs2022",
+      "cacheVariables": {
+        "IS_PRESET_USED": "TRUE",
+        "CMAKE_GENERATOR_TOOLSET": "ClangCL",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_BUILD_TYPE": "Release",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static",
+        "VCPKG_HOST_TRIPLET": "x64-windows",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+      },
+      "environment": {
+        "UseMultiToolTask": "true",
+        "EnforceProcessCountAcrossBuilds": "true"
+      }
+    },
+    {
+      "name": "debug-windows-vs2022",
+      "displayName": "Debug (Windows, VS2022 ClangCL)",
+      "description": "Configure for Debug build with vcpkg static libs and static CRT",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build/debug-windows-vs2022",
+      "cacheVariables": {
+        "IS_PRESET_USED": "TRUE",
+        "CMAKE_GENERATOR_TOOLSET": "ClangCL",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static",
+        "VCPKG_HOST_TRIPLET": "x64-windows",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDebug"
+      },
+      "environment": {
+        "UseMultiToolTask": "true",
+        "EnforceProcessCountAcrossBuilds": "true"
+      }
     }
   ]
 }

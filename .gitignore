@@ -6,8 +6,9 @@ assets/recordings/
 # definitions, hundreds of megabytes, never tracked.
 .games-cache/
 
-# Build output
+# Build output and packaging artifacts
 build/
+dist/
 
 # Python tooling caches
 .pytest_cache/
