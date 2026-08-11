@@ -1,13 +1,13 @@
 -- This file is part of the dosbox-automation-showroom Project.
 -- License: GPL-3.0-or-later. Contact: dosbox-automation-showroom-project@trinity2k.net
 --
--- Standalone install recipe for Duke Nukem 3D Shareware v1.1 (3D
--- Realms CD). The CD installer runs in mode 13h, where screen text
--- reads empty - that stretch is driven by counted keystrokes with
--- generous waits (the copy itself measured ~7 s), and the return of
--- the text-mode DOS prompt is the sync point. SETUP is a text UI and
--- is verified screen by screen; menu positions are counted from the
--- fresh-config defaults the installer just wrote.
+-- Standalone install recipe for Duke Nukem 3D Shareware v1.3d (3D
+-- Realms). The v1.3d installer is a text-mode UI throughout, so every
+-- step is gated on the screen rather than timed - the v1.1 installer
+-- this recipe originally targeted ran in mode 13h and needed blind
+-- waits. SETUP is likewise verified screen by screen; its menu
+-- positions are counted from the fresh-config defaults the installer
+-- just wrote.
 
 local function press(key)
     dosbox.key(key, true)
@@ -22,6 +22,17 @@ local function downs(count)
     end
 end
 
+-- Re-armed slices: a single wait longer than 30 s is cut short by the
+-- engine's wall ceiling even while frames keep advancing (aug-xdae).
+local function waitFor(text, slices, what)
+    for _ = 1, slices do
+        if dosbox.wait_for_text(text, 1500) then
+            return
+        end
+    end
+    dosbox.abort("never saw " .. what)
+end
+
 local function expect(text, frames, what)
     if not dosbox.wait_for_text(text, frames) then
         dosbox.abort("never saw " .. what)
@@ -34,34 +45,24 @@ dosbox.wait_frames(30)
 dosbox.type("INSTALL\n")
 dosbox.output["progress"] = "5"
 
--- Blind graphical stretch: welcome, title pick, C:\DUKE3D default,
--- create-directory confirmation.
-dosbox.wait_frames(700)
+waitFor("1996 3D Realms", 4, "the installer welcome screen")
 press("KBD_enter")
-dosbox.wait_frames(140)
+
+waitFor("Hard Drive Space Required", 4, "the component screen")
 press("KBD_enter")
-dosbox.wait_frames(140)
+
+-- C:\DUKE3D is offered and is where the launch config expects the game.
+waitFor("select a drive and directory", 4, "the install path screen")
 press("KBD_enter")
-dosbox.wait_frames(140)
-dosbox.type("Y")
 dosbox.output["progress"] = "20"
 
--- The copy finishes in seconds; wait far past it, then decline the
--- play offer and leave via the exit confirmation.
-for _ = 1, 4 do
-    dosbox.wait_frames(700)
-end
-dosbox.type("N")
-dosbox.wait_frames(140)
-press("KBD_esc")
-dosbox.wait_frames(140)
-dosbox.type("Y")
--- The installer exits leaving mode 13h, where the console is
--- invisible to screen text, and parks the prompt in C:\DUKE3D; MODE
--- CO80 restores text mode and makes that prompt the sync point.
-dosbox.wait_frames(300)
-dosbox.type("MODE CO80\n")
-expect("C:\\DUKE3D>", 900, "the DOS prompt after the installer")
+-- The archive inflates in a few seconds at this clock; the thank-you
+-- screen is the completion gate.
+waitFor("Thanks for installing", 8, "the installer finishing")
+press("KBD_enter")
+dosbox.output["progress"] = "40"
+
+waitFor("C:\\DUKE3D>", 4, "the DOS prompt after the installer")
 dosbox.output["progress"] = "50"
 
 dosbox.type("SETUP\n")

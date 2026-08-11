@@ -4,7 +4,9 @@
 #
 # Shareware v1.3d (repinned from v1.1 2026-08-08: the v1.3d zip
 # carries 3D Realms' LICENSE.TXT, the v1.1 packages carried no licence
-# text). Setup-driving showcase. Recipe proven against v1.3d unchanged.
+# text). Setup-driving showcase. The v1.3d installer is text-mode
+# throughout, unlike v1.1's mode 13h one; the recipe was rewritten
+# against it 2026-08-11. Cycles are raised for the archive inflate.
 
 slug = "duke3d"
 title = "Duke Nukem 3D"
@@ -32,8 +34,8 @@ sha256 = "c67efd179022bc6d9bde54f404c707cbcbdc15423c20be72e277bc2bdddf3d0e"
 # settings. Tune per game where the game needs it.
 [dosbox]
 machine = "svga_s3"
-cpu_cycles = 12000
-cpu_cycles_protected = 12000
+cpu_cycles = 32000
+cpu_cycles_protected = 32000
 
 [dosbox.sound]
 sblaster_type = "sb16"
