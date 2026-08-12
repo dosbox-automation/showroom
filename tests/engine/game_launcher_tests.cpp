@@ -65,15 +65,15 @@ protected:
     void SetUp() override
     {
         std::filesystem::create_directories(installDir());
-        setenv("FAKE_ENGINE_REPORT", (base() / "report.txt").string().c_str(), 1);
+        qputenv("FAKE_ENGINE_REPORT", QByteArray((base() / "report.txt").string().c_str()));
     }
 
     void TearDown() override
     {
-        unsetenv("FAKE_ENGINE_REPORT");
-        unsetenv("FAKE_ENGINE_MODE");
-        unsetenv("FAKE_ENGINE_SHUTDOWN_FILE");
-        unsetenv("FAKE_ENGINE_READY_FILE");
+        qunsetenv("FAKE_ENGINE_REPORT");
+        qunsetenv("FAKE_ENGINE_MODE");
+        qunsetenv("FAKE_ENGINE_SHUTDOWN_FILE");
+        qunsetenv("FAKE_ENGINE_READY_FILE");
     }
 
     std::filesystem::path base() const
@@ -124,7 +124,7 @@ TEST_F(GameLauncherFixture, launch_writes_the_conf_and_reports_the_game_running)
 
 TEST_F(GameLauncherFixture, launch_refuses_while_a_game_runs)
 {
-    setenv("FAKE_ENGINE_MODE", "run", 1);
+    qputenv("FAKE_ENGINE_MODE", QByteArray("run"));
     GameLauncher launcher(fakeEngine(), base(), deadPort());
     QSignalSpy started(&launcher, &GameLauncher::gameStarted);
     QSignalSpy ended(&launcher, &GameLauncher::gameEnded);
@@ -168,7 +168,7 @@ TEST_F(GameLauncherFixture, a_spawn_failure_reports_launch_failed)
 
 TEST_F(GameLauncherFixture, stop_ends_the_running_game)
 {
-    setenv("FAKE_ENGINE_MODE", "run", 1);
+    qputenv("FAKE_ENGINE_MODE", QByteArray("run"));
     GameLauncher launcher(fakeEngine(), base(), deadPort());
     QSignalSpy started(&launcher, &GameLauncher::gameStarted);
     QSignalSpy ended(&launcher, &GameLauncher::gameEnded);
@@ -187,7 +187,7 @@ TEST_F(GameLauncherFixture, stop_ends_the_running_game)
 
 TEST_F(GameLauncherFixture, shutdown_and_wait_ends_the_game_before_returning)
 {
-    setenv("FAKE_ENGINE_MODE", "run", 1);
+    qputenv("FAKE_ENGINE_MODE", QByteArray("run"));
     GameLauncher launcher(fakeEngine(), base(), deadPort());
     QSignalSpy started(&launcher, &GameLauncher::gameStarted);
     std::string error;
@@ -212,7 +212,7 @@ TEST_F(GameLauncherFixture, destroying_the_launcher_with_a_running_child_is_safe
     // The engine member outlives the slug member in reverse destruction
     // order, so a finished signal emitted while the destructor kills the
     // child must not reach the launcher's dead members.
-    setenv("FAKE_ENGINE_MODE", "run", 1);
+    qputenv("FAKE_ENGINE_MODE", QByteArray("run"));
     {
         GameLauncher launcher(fakeEngine(), base(), deadPort());
         QSignalSpy started(&launcher, &GameLauncher::gameStarted);

@@ -26,8 +26,8 @@ protected:
         saved_cache_ = savedValue("SHOWROOM_CACHE_DIR");
         saved_xdg_ = savedValue("XDG_CACHE_HOME");
         saved_engine_ = savedValue("SHOWROOM_ENGINE_BINARY");
-        setenv("SHOWROOM_CACHE_DIR", base().string().c_str(), 1);
-        unsetenv("SHOWROOM_ENGINE_BINARY");
+        qputenv("SHOWROOM_CACHE_DIR", QByteArray(base().string().c_str()));
+        qunsetenv("SHOWROOM_ENGINE_BINARY");
     }
 
     void TearDown() override
@@ -54,9 +54,9 @@ protected:
     static void restore(const char* name, const std::optional<std::string>& value)
     {
         if (value.has_value()) {
-            setenv(name, value->c_str(), 1);
+            qputenv(name, QByteArray(value->c_str()));
         } else {
-            unsetenv(name);
+            qunsetenv(name);
         }
     }
 
@@ -113,7 +113,7 @@ TEST_F(PathsFixture, the_engine_binary_override_wins_when_it_exists)
     const auto engine = std::filesystem::path(dir_.path().toStdString())
                       / "engine-binary";
     std::ofstream(engine) << "stub";
-    setenv("SHOWROOM_ENGINE_BINARY", engine.string().c_str(), 1);
+    qputenv("SHOWROOM_ENGINE_BINARY", QByteArray(engine.string().c_str()));
 
     EXPECT_EQ(Paths::engineBinary(), engine);
 }
@@ -122,7 +122,7 @@ TEST_F(PathsFixture, a_missing_engine_binary_override_falls_back)
 {
     const auto missing = std::filesystem::path(dir_.path().toStdString())
                        / "no-such-engine";
-    setenv("SHOWROOM_ENGINE_BINARY", missing.string().c_str(), 1);
+    qputenv("SHOWROOM_ENGINE_BINARY", QByteArray(missing.string().c_str()));
 
     EXPECT_NE(Paths::engineBinary(), missing);
 }
@@ -182,10 +182,10 @@ TEST_F(PathsFixture, a_slug_that_could_climb_out_of_the_cache_is_refused)
 
 TEST_F(PathsFixture, the_cache_base_follows_xdg_cache_home_when_nothing_overrides_it)
 {
-    unsetenv("SHOWROOM_CACHE_DIR");
+    qunsetenv("SHOWROOM_CACHE_DIR");
     const std::filesystem::path xdg = std::filesystem::path(dir_.path().toStdString())
                                     / "xdg";
-    setenv("XDG_CACHE_HOME", xdg.string().c_str(), 1);
+    qputenv("XDG_CACHE_HOME", QByteArray(xdg.string().c_str()));
 
     const std::filesystem::path cache = Paths::cacheDir();
     EXPECT_TRUE(isWithin(xdg, cache)) << cache.string() << " not below " << xdg.string();

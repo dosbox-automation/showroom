@@ -204,8 +204,8 @@ protected:
         std::ofstream(games_ / "doom" / "recipe.lua") << "-- recipe\n";
 
         server_.setShutdownFile(base_ / "shutdown");
-        setenv("FAKE_ENGINE_MODE", "run", 1);
-        setenv("FAKE_ENGINE_SHUTDOWN_FILE", (base_ / "shutdown").string().c_str(), 1);
+        qputenv("FAKE_ENGINE_MODE", QByteArray("run"));
+        qputenv("FAKE_ENGINE_SHUTDOWN_FILE", QByteArray((base_ / "shutdown").string().c_str()));
 
         runner_ = std::make_unique<InstallRunner>(fs::path(FAKE_ENGINE_PATH),
                                                   cache_,
@@ -218,8 +218,8 @@ protected:
     void TearDown() override
     {
         runner_.reset();
-        unsetenv("FAKE_ENGINE_MODE");
-        unsetenv("FAKE_ENGINE_SHUTDOWN_FILE");
+        qunsetenv("FAKE_ENGINE_MODE");
+        qunsetenv("FAKE_ENGINE_SHUTDOWN_FILE");
         fs::remove_all(base_);
     }
 
@@ -318,7 +318,7 @@ TEST_F(InstallRunnerFixture, a_script_overrunning_its_ceiling_is_stopped_and_rol
 
 TEST_F(InstallRunnerFixture, an_engine_that_dies_mid_install_rolls_back)
 {
-    setenv("FAKE_ENGINE_MODE", "exit", 1);
+    qputenv("FAKE_ENGINE_MODE", QByteArray("exit"));
 
     QSignalSpy failed(runner_.get(), &InstallRunner::failed);
     std::string error;

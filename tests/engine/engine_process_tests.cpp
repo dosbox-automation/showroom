@@ -51,15 +51,15 @@ protected:
         conf_path_ = base() / "run.conf";
         std::ofstream(conf_path_) << "[sdl]\n";
         report_path_ = base() / "report.txt";
-        setenv("FAKE_ENGINE_REPORT", report_path_.string().c_str(), 1);
+        qputenv("FAKE_ENGINE_REPORT", QByteArray(report_path_.string().c_str()));
     }
 
     void TearDown() override
     {
-        unsetenv("FAKE_ENGINE_REPORT");
-        unsetenv("FAKE_ENGINE_MODE");
-        unsetenv("FAKE_ENGINE_SHUTDOWN_FILE");
-        unsetenv("FAKE_ENGINE_READY_FILE");
+        qunsetenv("FAKE_ENGINE_REPORT");
+        qunsetenv("FAKE_ENGINE_MODE");
+        qunsetenv("FAKE_ENGINE_SHUTDOWN_FILE");
+        qunsetenv("FAKE_ENGINE_READY_FILE");
     }
 
     std::filesystem::path base() const
@@ -187,7 +187,7 @@ TEST_F(EngineProcessFixture, each_start_issues_a_fresh_token)
 
 TEST_F(EngineProcessFixture, start_refuses_while_the_child_runs)
 {
-    setenv("FAKE_ENGINE_MODE", "run", 1);
+    qputenv("FAKE_ENGINE_MODE", QByteArray("run"));
     EngineProcess process(fakeEngine());
     QSignalSpy started(&process, &EngineProcess::started);
     QSignalSpy finished(&process, &EngineProcess::finished);
@@ -228,9 +228,9 @@ TEST_F(EngineProcessFixture, failed_fires_when_the_binary_cannot_execute)
 
 TEST_F(EngineProcessFixture, graceful_stop_prefers_the_shutdown_requester)
 {
-    setenv("FAKE_ENGINE_MODE", "run", 1);
+    qputenv("FAKE_ENGINE_MODE", QByteArray("run"));
     const auto shutdown_file = base() / "shutdown-request";
-    setenv("FAKE_ENGINE_SHUTDOWN_FILE", shutdown_file.string().c_str(), 1);
+    qputenv("FAKE_ENGINE_SHUTDOWN_FILE", QByteArray(shutdown_file.string().c_str()));
 
     EngineProcess process(fakeEngine());
     QSignalSpy started(&process, &EngineProcess::started);
@@ -257,7 +257,7 @@ TEST_F(EngineProcessFixture, graceful_stop_prefers_the_shutdown_requester)
 
 TEST_F(EngineProcessFixture, stop_terminates_when_the_requester_cannot_deliver)
 {
-    setenv("FAKE_ENGINE_MODE", "run", 1);
+    qputenv("FAKE_ENGINE_MODE", QByteArray("run"));
     EngineProcess process(fakeEngine());
     QSignalSpy started(&process, &EngineProcess::started);
     QSignalSpy finished(&process, &EngineProcess::finished);
@@ -276,7 +276,7 @@ TEST_F(EngineProcessFixture, stop_terminates_when_the_requester_cannot_deliver)
 
 TEST_F(EngineProcessFixture, stop_terminates_when_the_child_ignores_the_request)
 {
-    setenv("FAKE_ENGINE_MODE", "run", 1);
+    qputenv("FAKE_ENGINE_MODE", QByteArray("run"));
     EngineProcess process(fakeEngine());
     QSignalSpy started(&process, &EngineProcess::started);
     QSignalSpy finished(&process, &EngineProcess::finished);
@@ -295,7 +295,7 @@ TEST_F(EngineProcessFixture, stop_terminates_when_the_child_ignores_the_request)
 
 TEST_F(EngineProcessFixture, stop_without_a_requester_goes_straight_to_terminate)
 {
-    setenv("FAKE_ENGINE_MODE", "run", 1);
+    qputenv("FAKE_ENGINE_MODE", QByteArray("run"));
     EngineProcess process(fakeEngine());
     QSignalSpy started(&process, &EngineProcess::started);
     QSignalSpy finished(&process, &EngineProcess::finished);
@@ -314,11 +314,11 @@ TEST_F(EngineProcessFixture, stop_without_a_requester_goes_straight_to_terminate
 #ifndef _WIN32
 TEST_F(EngineProcessFixture, stop_kills_a_child_that_ignores_terminate)
 {
-    setenv("FAKE_ENGINE_MODE", "stubborn", 1);
+    qputenv("FAKE_ENGINE_MODE", QByteArray("stubborn"));
     // Terminating before the child installs SIG_IGN would pass this test
     // through the terminate path; the ready file closes that race.
     const auto ready_file = base() / "child-ready";
-    setenv("FAKE_ENGINE_READY_FILE", ready_file.string().c_str(), 1);
+    qputenv("FAKE_ENGINE_READY_FILE", QByteArray(ready_file.string().c_str()));
 
     EngineProcess process(fakeEngine());
     QSignalSpy started(&process, &EngineProcess::started);

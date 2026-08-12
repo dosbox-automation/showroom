@@ -292,16 +292,16 @@ protected:
         const char* saved = std::getenv("SHOWROOM_CACHE_DIR");
         saved_cache_ = saved ? std::optional<std::string>(saved) : std::nullopt;
         cache_ = std::filesystem::path(dir_.path().toStdString()) / "cache";
-        setenv("SHOWROOM_CACHE_DIR", cache_.string().c_str(), 1);
+        qputenv("SHOWROOM_CACHE_DIR", QByteArray(cache_.string().c_str()));
         std::filesystem::create_directories(cache_ / "installs" / "doom");
     }
 
     void TearDown() override
     {
         if (saved_cache_.has_value()) {
-            setenv("SHOWROOM_CACHE_DIR", saved_cache_->c_str(), 1);
+            qputenv("SHOWROOM_CACHE_DIR", QByteArray(saved_cache_->c_str()));
         } else {
-            unsetenv("SHOWROOM_CACHE_DIR");
+            qunsetenv("SHOWROOM_CACHE_DIR");
         }
     }
 
