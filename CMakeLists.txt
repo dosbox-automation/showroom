@@ -89,7 +89,7 @@ target_link_libraries(showroom_engine PRIVATE
 
 # The sidebar badge, set here so the release train has one place to
 # change rather than a literal going stale in a widget.
-set(SHOWROOM_ENGINE_VERSION "0.84-da3" CACHE STRING
+set(SHOWROOM_ENGINE_VERSION "0.84-da4" CACHE STRING
     "Version string of the bundled dosbox-automation")
 
 # A library rather than part of the executable, so the UI tests can link
