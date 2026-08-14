@@ -114,7 +114,7 @@ void renderEngineSettings(const GameDefinition& game, std::ostringstream& conf)
 {
     const auto& sound = game.dosbox().sound;
     conf << "[sdl]\n"
-         << "output = texture\n\n";
+         << "output = opengl\n\n";
     conf << "[dosbox]\n"
          << "machine = " << game.dosbox().machine << "\n\n";
     conf << "[cpu]\n"
