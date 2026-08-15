@@ -110,13 +110,26 @@ bool validate(const GameDefinition& game, const std::filesystem::path& cache_bas
     return true;
 }
 
-void renderEngineSettings(const GameDefinition& game, std::ostringstream& conf)
+// Install recipes inject US-layout scancodes and wait for English text;
+// the engine's 'auto' defaults follow the host locale and garble both on
+// non-US hosts (':' arrives as 'Ö' on QWERTZ). Play sessions inject
+// nothing, so they keep the host locale.
+void renderEngineSettings(const GameDefinition& game, std::ostringstream& conf,
+                          bool pin_injection_locale)
 {
     const auto& sound = game.dosbox().sound;
     conf << "[sdl]\n"
          << "output = opengl\n\n";
     conf << "[dosbox]\n"
-         << "machine = " << game.dosbox().machine << "\n\n";
+         << "machine = " << game.dosbox().machine << "\n";
+    if (pin_injection_locale) {
+        conf << "language = en\n";
+    }
+    conf << "\n";
+    if (pin_injection_locale) {
+        conf << "[dos]\n"
+             << "keyboard_layout = us\n\n";
+    }
     conf << "[cpu]\n"
          << "cpu_cycles = " << game.dosbox().cpu_cycles << "\n"
          << "cpu_cycles_protected = " << game.dosbox().cpu_cycles_protected << "\n\n";
@@ -287,7 +300,7 @@ std::optional<std::string> ConfWriter::renderConf(const GameDefinition& game,
     }
 
     std::ostringstream conf;
-    renderEngineSettings(game, conf);
+    renderEngineSettings(game, conf, false);
 
     conf << "[autoexec]\n";
     // The game's own install dir is all of C: - era-correct (games
@@ -350,7 +363,7 @@ std::optional<std::string> ConfWriter::renderInstallConf(
 
     const auto extracts_dir = extractsDir(cache_base, game.slug());
     std::ostringstream conf;
-    renderEngineSettings(game, conf);
+    renderEngineSettings(game, conf, true);
 
     conf << "[autoexec]\n";
     if (*install_type == InstallType::FloppyInstall) {

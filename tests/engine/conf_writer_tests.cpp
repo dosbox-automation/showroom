@@ -144,6 +144,19 @@ TEST_F(ConfWriterDir, renders_engine_settings_from_the_definition)
     EXPECT_TRUE(hasLine(*conf, "webserver_port = 8686"));
 }
 
+TEST_F(ConfWriterDir, play_conf_leaves_keyboard_layout_and_language_to_the_host)
+{
+    const auto game = parseOrDie(doomLikeToml());
+    std::string error;
+    const auto conf = ConfWriter::renderConf(game, dir_, error);
+    ASSERT_TRUE(conf) << error;
+
+    // Substring form: the test workspace path carries this test's own
+    // name, which would match a bare "keyboard_layout" search.
+    EXPECT_EQ(conf->find("keyboard_layout ="), std::string::npos);
+    EXPECT_EQ(conf->find("language ="), std::string::npos);
+}
+
 TEST_F(ConfWriterDir, autoexec_mounts_the_games_own_install_dir_and_runs_the_game)
 {
     const auto game = parseOrDie(doomLikeToml());
@@ -427,6 +440,19 @@ TEST_F(InstallConfDir, install_conf_renders_the_same_engine_settings_as_play)
     EXPECT_TRUE(hasLine(*conf, "webserver_enabled = true"));
     EXPECT_TRUE(hasLine(*conf, "webserver_token_file = false"));
     EXPECT_TRUE(hasLine(*conf, "webserver_port = 8686"));
+}
+
+TEST_F(InstallConfDir, install_conf_pins_us_layout_and_english_for_injection)
+{
+    const auto game = parseOrDie(doomLikeToml());
+    addExtractedFile("disk1.ima");
+    std::string error;
+    const auto conf = ConfWriter::renderInstallConf(game, dir_, error);
+    ASSERT_TRUE(conf) << error;
+
+    EXPECT_TRUE(hasLine(*conf, "[dos]"));
+    EXPECT_TRUE(hasLine(*conf, "keyboard_layout = us"));
+    EXPECT_TRUE(hasLine(*conf, "language = en"));
 }
 
 TEST_F(InstallConfDir, floppy_install_mounts_the_first_image_and_the_staging_dir)
