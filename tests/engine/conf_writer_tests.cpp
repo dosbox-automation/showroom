@@ -125,7 +125,7 @@ TEST_F(ConfWriterDir, renders_engine_settings_from_the_definition)
     ASSERT_TRUE(conf) << error;
 
     EXPECT_TRUE(hasLine(*conf, "[sdl]"));
-    EXPECT_TRUE(hasLine(*conf, "output = texture"));
+    EXPECT_TRUE(hasLine(*conf, "output = opengl"));
     EXPECT_TRUE(hasLine(*conf, "[dosbox]"));
     EXPECT_TRUE(hasLine(*conf, "machine = svga_s3"));
     EXPECT_TRUE(hasLine(*conf, "[cpu]"));
@@ -418,7 +418,7 @@ TEST_F(InstallConfDir, install_conf_renders_the_same_engine_settings_as_play)
     ASSERT_TRUE(conf) << error;
 
     EXPECT_TRUE(hasLine(*conf, "[sdl]"));
-    EXPECT_TRUE(hasLine(*conf, "output = texture"));
+    EXPECT_TRUE(hasLine(*conf, "output = opengl"));
     EXPECT_TRUE(hasLine(*conf, "machine = svga_s3"));
     EXPECT_TRUE(hasLine(*conf, "cpu_cycles = 12000"));
     EXPECT_TRUE(hasLine(*conf, "cpu_cycles_protected = 12000"));
