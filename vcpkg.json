@@ -5,7 +5,16 @@
   "version": "0.1.1",
   "dependencies": [
     "gtest",
-    "libarchive",
+    {
+      "name": "libarchive",
+      "default-features": false,
+      "features": [
+        "bzip2",
+        "lz4",
+        "lzma",
+        "zstd"
+      ]
+    },
     "tomlplusplus"
   ],
   "features": {
