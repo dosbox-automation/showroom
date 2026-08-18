@@ -12,15 +12,35 @@
 #include "net/downloader.h"
 #include "model/game_catalog.h"
 #include "ui/main_window.h"
+#include "ui/version.h"
 
 #include <QApplication>
 #include <QIcon>
 
+#include <cstdio>
+#include <cstring>
 #include <memory>
 #include <system_error>
 
 int main(int argc, char* argv[])
 {
+    // Answered before QApplication so both work with no display server.
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--version") == 0) {
+            std::printf("dosbox-automation-showroom, version %s (%s)\n"
+                        "bundled engine: dosbox-automation %s\n",
+                        showroom::kShowroomVersion,
+                        showroom::kShowroomGitHash,
+                        showroom::kBundledEngineVersion);
+            return 0;
+        }
+        if (std::strcmp(argv[i], "--help") == 0) {
+            std::printf("Usage: showroom [--version] [--help]\n"
+                        "Qt platform options (-platform, -style, ...) also apply.\n");
+            return 0;
+        }
+    }
+
     QApplication app(argc, argv);
     QCoreApplication::setApplicationName(QStringLiteral("dosbox-automation-showroom"));
     QCoreApplication::setOrganizationName(QStringLiteral("dosbox-automation"));

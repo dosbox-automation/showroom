@@ -80,6 +80,7 @@ qt_add_executable(showroom_ui_tests
   ui/game_tile_tests.cpp
   ui/tile_grid_tests.cpp
   ui/main_window_tests.cpp
+  ui/version_cli_tests.cpp
 )
 
 target_link_libraries(showroom_ui_tests PRIVATE
@@ -87,6 +88,13 @@ target_link_libraries(showroom_ui_tests PRIVATE
   Qt6::Test
   GTest::gtest
 )
+
+# The version CLI tests spawn the real application binary.
+target_compile_definitions(showroom_ui_tests PRIVATE
+  SHOWROOM_BINARY_PATH="$<TARGET_FILE:showroom>"
+)
+
+add_dependencies(showroom_ui_tests showroom)
 
 gtest_discover_tests(showroom_ui_tests
   WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"

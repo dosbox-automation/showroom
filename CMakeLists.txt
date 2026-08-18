@@ -113,9 +113,26 @@ target_link_libraries(showroom_ui PUBLIC
   Qt6::Network
 )
 
+# Build scripts pass this in; synced trees on the build VMs carry no
+# .git, so the configure-time lookup is only the developer fallback.
+set(BUILD_GIT_HASH "" CACHE STRING "Short git hash stamped into --version")
+if(NOT BUILD_GIT_HASH)
+  execute_process(
+    COMMAND git rev-parse --short=7 HEAD
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    OUTPUT_VARIABLE BUILD_GIT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  if(NOT BUILD_GIT_HASH)
+    set(BUILD_GIT_HASH "unknown")
+  endif()
+endif()
+
 target_compile_definitions(showroom_ui PUBLIC
   SHOWROOM_VERSION="${PROJECT_VERSION}"
   SHOWROOM_ENGINE_VERSION="${SHOWROOM_ENGINE_VERSION}"
+  SHOWROOM_GIT_HASH="${BUILD_GIT_HASH}"
   # Last resort for a developer build run straight out of the build
   # directory, where nothing has been installed beside the binary yet.
   SHOWROOM_SOURCE_ASSETS_DIR="${CMAKE_SOURCE_DIR}/assets"
