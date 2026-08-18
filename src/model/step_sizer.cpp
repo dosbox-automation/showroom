@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <limits>
 
 namespace showroom {
 namespace {
@@ -100,19 +101,40 @@ int StepSizer::snapToStep(int desired_tile_width_px) const
     return nearest;
 }
 
-int StepSizer::tileWidthForWindowSize(int window_width_px, int window_height_px) const
+int StepSizer::tileWidthForResize(int current_tile_width_px, int window_width_px,
+                                  int window_height_px) const
 {
     if (tile_widths_.empty()) {
         return kMinTileWidthPx;
     }
 
+    // The window sits at exact step geometry between drags, so an axis
+    // still at that value was not dragged and must not vote.
+    constexpr int kDragThresholdPx = 5;
+    const WindowSize current = windowSizeFor(current_tile_width_px);
+    const bool width_dragged = std::abs(window_width_px - current.width_px)
+                             > kDragThresholdPx;
+    const bool height_dragged = std::abs(window_height_px - current.height_px)
+                              > kDragThresholdPx;
+    if (!width_dragged && !height_dragged) {
+        return snapToStep(current_tile_width_px);
+    }
+
     int best = tile_widths_.front();
+    int best_distance_px = std::numeric_limits<int>::max();
     for (const int width : tile_widths_) {
         const WindowSize size = windowSizeFor(width);
-        if (size.width_px > window_width_px || size.height_px > window_height_px) {
-            break;
+        int distance_px = 0;
+        if (width_dragged) {
+            distance_px += std::abs(size.width_px - window_width_px);
         }
-        best = width;
+        if (height_dragged) {
+            distance_px += std::abs(size.height_px - window_height_px);
+        }
+        if (distance_px < best_distance_px) {
+            best_distance_px = distance_px;
+            best = width;
+        }
     }
     return best;
 }

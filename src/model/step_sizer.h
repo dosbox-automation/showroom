@@ -67,9 +67,12 @@ public:
 
     int snapToStep(int desired_tile_width_px) const;
 
-    // What a resize handler wants: the biggest tiles that still fit in
-    // what the user dragged.
-    int tileWidthForWindowSize(int window_width_px, int window_height_px) const;
+    // What a resize handler wants: the step nearest to what the user
+    // dragged, judged only along the axes that moved away from the
+    // current step's geometry. Requiring a drag to satisfy both
+    // dimensions made single-edge resizes snap back forever.
+    int tileWidthForResize(int current_tile_width_px, int window_width_px,
+                           int window_height_px) const;
 
     WindowSize windowSizeFor(int tile_width_px) const;
 

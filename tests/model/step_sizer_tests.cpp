@@ -181,19 +181,44 @@ TEST(StepSizerSnapping, snapping_picks_the_nearest_offered_step)
     EXPECT_EQ(sizer.snapToStep(4000), 280);
 }
 
-TEST(StepSizerSnapping, a_dragged_window_resolves_to_the_largest_step_that_fits_inside_it)
+TEST(StepSizerSnapping, a_resize_follows_the_axis_the_user_dragged)
 {
+    // The old largest-step-that-fits rule demanded a drag supply BOTH
+    // dimensions of the next step; widening alone never grew the tiles
+    // and the settle snap reverted the drag (GNOME Wayland, 2026-08-18).
     const StepSizer sizer(defaultChrome(), 1920, 1080);
-
     const WindowSize at240 = sizer.windowSizeFor(240);
-    EXPECT_EQ(sizer.tileWidthForWindowSize(at240.width_px, at240.height_px), 240);
 
-    // One pixel short in either direction and the next step down wins.
-    EXPECT_EQ(sizer.tileWidthForWindowSize(at240.width_px - 1, at240.height_px), 200);
-    EXPECT_EQ(sizer.tileWidthForWindowSize(at240.width_px, at240.height_px - 1), 200);
+    EXPECT_EQ(sizer.tileWidthForResize(240, at240.width_px, at240.height_px), 240);
 
-    // Smaller than the minimum still answers with the minimum.
-    EXPECT_EQ(sizer.tileWidthForWindowSize(10, 10), kMinTileWidthPx);
+    // A wiggle under half a step settles back.
+    EXPECT_EQ(sizer.tileWidthForResize(240, at240.width_px + 30, at240.height_px + 20),
+              240);
+
+    // Width dragged past halfway to the next step, height untouched: the
+    // untouched axis must not veto the change.
+    EXPECT_EQ(sizer.tileWidthForResize(240, at240.width_px + 90, at240.height_px), 280);
+    EXPECT_EQ(sizer.tileWidthForResize(240, at240.width_px + 70, at240.height_px), 240);
+    EXPECT_EQ(sizer.tileWidthForResize(240, at240.width_px - 90, at240.height_px), 200);
+
+    // Height-only drags steer the same way (half a height step is 60).
+    EXPECT_EQ(sizer.tileWidthForResize(240, at240.width_px, at240.height_px + 70), 280);
+    EXPECT_EQ(sizer.tileWidthForResize(240, at240.width_px, at240.height_px - 70), 200);
+
+    // A diagonal drag lands on the step nearest in both dimensions.
+    const WindowSize at160 = sizer.windowSizeFor(160);
+    EXPECT_EQ(sizer.tileWidthForResize(240, at160.width_px + 10, at160.height_px - 5),
+              160);
+
+    // Smaller than anything offered still answers with the smallest step.
+    EXPECT_EQ(sizer.tileWidthForResize(240, 10, 10), kMinTileWidthPx);
+}
+
+TEST(StepSizerSnapping, a_resize_on_a_screen_with_no_steps_answers_the_minimum)
+{
+    const StepSizer sizer(defaultChrome(), 640, 480);
+
+    EXPECT_EQ(sizer.tileWidthForResize(kMinTileWidthPx, 700, 500), kMinTileWidthPx);
 }
 
 TEST(StepSizerHostileInput, nonsense_screen_geometry_does_not_produce_nonsense_steps)

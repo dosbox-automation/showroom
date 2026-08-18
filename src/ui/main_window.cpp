@@ -312,9 +312,11 @@ void MainWindow::resizeEvent(QResizeEvent* event)
     }
 
     // A window manager that ignores size increments hands us an
-    // arbitrary size; take the largest step that fits inside it so the
+    // arbitrary size; follow the dragged axis to the nearest step so the
     // grid still lands on a whole number of tiles.
-    const int width = sizer_.tileWidthForWindowSize(size().width(), size().height());
+    const int width = sizer_.tileWidthForResize(tile_width_px_,
+                                                size().width(),
+                                                size().height());
     if (width != tile_width_px_) {
         applyTileWidth(width);
     }
