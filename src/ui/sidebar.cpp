@@ -8,6 +8,7 @@
 
 #include <QAbstractButton>
 #include <QDesktopServices>
+#include <QFontMetrics>
 #include <QIcon>
 #include <QLabel>
 #include <QPainter>
@@ -42,8 +43,21 @@ protected:
         QPainter painter(this);
         painter.setRenderHint(QPainter::TextAntialiasing, true);
 
-        QFont font = theme::monospaceFont(12, QFont::DemiBold);
-        font.setLetterSpacing(QFont::PercentageSpacing, 130);
+        const QString label = QStringLiteral("DOSBOX-AUTOMATION SHOWROOM");
+
+        // After rotation the widget's height becomes the available text
+        // width. Scale the font down from the design size until it fits.
+        int pt = kMaxPointSize;
+        QFont font = theme::monospaceFont(pt, QFont::DemiBold);
+        font.setLetterSpacing(QFont::PercentageSpacing, kLetterSpacingPct);
+        while (pt > kMinPointSize) {
+            if (QFontMetrics(font).horizontalAdvance(label) <= height()) {
+                break;
+            }
+            --pt;
+            font.setPointSize(pt);
+        }
+
         painter.setFont(font);
         painter.setPen(theme::kDimText);
 
@@ -51,8 +65,13 @@ protected:
         painter.rotate(-90);
         painter.drawText(QRectF(-height() / 2.0, -width() / 2.0, height(), width()),
                          Qt::AlignCenter,
-                         QStringLiteral("DOSBOX-AUTOMATION SHOWROOM"));
+                         label);
     }
+
+private:
+    static constexpr int kMaxPointSize = 12;
+    static constexpr int kMinPointSize = 7;
+    static constexpr int kLetterSpacingPct = 130;
 };
 
 // A logo in a rounded box. Falls back to the two-letter mark from the

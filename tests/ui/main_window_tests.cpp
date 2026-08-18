@@ -80,6 +80,38 @@ TEST_F(WindowFixture, the_window_is_exactly_the_size_its_step_implies)
     EXPECT_EQ(window.size().height(), expected.height_px);
 }
 
+TEST_F(WindowFixture, an_in_between_resize_settles_back_onto_the_step)
+{
+    // A drag can end between two steps: the step logic only snapped when
+    // the step CHANGED, so such a window kept its arbitrary size and the
+    // fixed-size grid floated in the slack (2026-08-18).
+    MainWindow window(catalog(), assetsDir(), settings(), sizer());
+    window.show();
+    const WindowSize step = window.sizer().windowSizeFor(window.tileWidth());
+
+    // Larger than the step, but not enough to reach the next one.
+    window.resize(step.width_px + 30, step.height_px + 20);
+    QTest::qWait(MainWindow::kResizeSettleMs + 100);
+
+    EXPECT_EQ(window.size().width(), step.width_px);
+    EXPECT_EQ(window.size().height(), step.height_px);
+}
+
+TEST_F(WindowFixture, an_oversized_window_keeps_the_grid_at_the_sidebar)
+{
+    // While the window is between steps (mid-drag), the grid must hug the
+    // sidebar rather than centre in the leftover space.
+    MainWindow window(catalog(), assetsDir(), settings(), sizer());
+    window.show();
+    const WindowSize step = window.sizer().windowSizeFor(window.tileWidth());
+
+    window.resize(step.width_px + 30, step.height_px + 20);
+    QTest::qWait(50);
+
+    EXPECT_EQ(window.grid()->pos().x(), window.sizer().chrome().sidebar_width_px);
+    EXPECT_EQ(window.grid()->pos().y(), 0);
+}
+
 TEST_F(WindowFixture, stepping_up_and_down_returns_to_where_it_started)
 {
     MainWindow window(catalog(), assetsDir(), settings(), sizer());

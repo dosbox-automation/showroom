@@ -15,6 +15,8 @@
 #include <filesystem>
 #include <string>
 
+class QTimer;
+
 namespace showroom {
 
 class Connectivity;
@@ -42,6 +44,10 @@ public:
 
     static StepSizer sizerForPrimaryScreen();
 
+    // How long a resize must stay quiet before the window snaps back to
+    // its step's exact size. Public so tests can wait past it.
+    static constexpr int kResizeSettleMs = 200;
+
     int tileWidth() const { return tile_width_px_; }
     const StepSizer& sizer() const { return sizer_; }
     TileGrid* grid() const { return grid_; }
@@ -63,6 +69,7 @@ protected:
 
 private:
     void applyTileWidth(int width_px);
+    void snapToStepGeometry();
     void showAbout();
     void onTileAction(const QString& slug);
     void onGameEnded(const QString& slug);
@@ -116,6 +123,10 @@ private:
     // resizeEvent applies a step, which resizes the window, which arrives
     // back here.
     bool applying_step_ = false;
+
+    // A resize inside a drag cannot be fought; this fires once the drag
+    // has settled and snaps the window onto its step's exact size.
+    QTimer* resize_settle_timer_ = nullptr;
 };
 
 } // namespace showroom

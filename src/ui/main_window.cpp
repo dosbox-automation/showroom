@@ -27,6 +27,7 @@
 #include <QMessageBox>
 #include <QScreen>
 #include <QShortcut>
+#include <QTimer>
 
 #include <algorithm>
 #include <utility>
@@ -94,7 +95,10 @@ MainWindow::MainWindow(const GameCatalog& catalog,
     layout->addWidget(sidebar_);
 
     grid_ = new TileGrid(catalog_, assets_dir_ / "games", sizer_.chrome(), central);
-    layout->addWidget(grid_, 1);
+    // Anchored, not centred: between steps (mid-drag) the window is
+    // briefly larger than the grid, and the slack belongs right and
+    // below, never between sidebar and tiles.
+    layout->addWidget(grid_, 1, Qt::AlignLeft | Qt::AlignTop);
 
     if (launcher_ != nullptr) {
         std::error_code probe_error;
@@ -222,6 +226,14 @@ MainWindow::MainWindow(const GameCatalog& catalog,
 
     setCentralWidget(central);
 
+    resize_settle_timer_ = new QTimer(this);
+    resize_settle_timer_->setSingleShot(true);
+    resize_settle_timer_->setInterval(kResizeSettleMs);
+    connect(resize_settle_timer_,
+            &QTimer::timeout,
+            this,
+            &MainWindow::snapToStepGeometry);
+
     auto* zoom_in = new QShortcut(QKeySequence::ZoomIn, this);
     connect(zoom_in, &QShortcut::activated, this, &MainWindow::stepUp);
     // ZoomIn is Ctrl+Plus, which needs a shift on most layouts. Ctrl+=
@@ -306,6 +318,26 @@ void MainWindow::resizeEvent(QResizeEvent* event)
     if (width != tile_width_px_) {
         applyTileWidth(width);
     }
+
+    // The applyTileWidth resize loses against an active drag, and a drag
+    // ending between steps never changes the step again - so the snap
+    // back to exact geometry waits until the resizing has gone quiet.
+    resize_settle_timer_->start();
+}
+
+void MainWindow::snapToStepGeometry()
+{
+    // A maximized or fullscreen window is the compositor's size, not ours.
+    if (isMaximized() || isFullScreen()) {
+        return;
+    }
+    const WindowSize target = sizer_.windowSizeFor(tile_width_px_);
+    if (size().width() == target.width_px && size().height() == target.height_px) {
+        return;
+    }
+    applying_step_ = true;
+    resize(target.width_px, target.height_px);
+    applying_step_ = false;
 }
 
 void MainWindow::closeEvent(QCloseEvent* event)
