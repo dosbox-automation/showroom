@@ -188,6 +188,53 @@ TEST(GameTilePainting, a_working_state_draws_its_progress_across_the_top)
     EXPECT_NE(early.pixelColor(x, y), late.pixelColor(x, y));
 }
 
+TEST(GameTilePainting, a_tile_without_screenshots_names_its_game)
+{
+    // The da4 tarball shipped without screenshots and every tile was an
+    // anonymous dark frame (aug-rrwq). The title travels with the
+    // definition, so a missing capture must still name the game.
+    std::string error;
+    const auto definition = GameDefinition::fromTomlString(R"(slug = "probe"
+title = "Probe Game"
+rank = 1
+license = "shareware"
+
+[sources.primary]
+url = "https://example.invalid/probe.zip"
+
+[dosbox]
+machine = "svga_s3"
+cpu_cycles = 3000
+cpu_cycles_protected = 3000
+
+[launch]
+executable = "GAME.EXE"
+
+[install]
+max_runtime_seconds = 60
+)",
+                                                           error);
+    ASSERT_TRUE(definition) << error;
+
+    GameTile tile(*definition, gamesDir() / "no-such-directory");
+    tile.setTileWidth(240);
+
+    // Ink between the progress strip and the legend; without the
+    // placeholder that whole region is the uniform background fill.
+    // Margins keep the scan clear of the rounded border.
+    const QImage image = renderTile(tile);
+    bool ink = false;
+    for (int y = 14; y < image.height() - theme::kLegendHeightPx && !ink; ++y) {
+        for (int x = 14; x < image.width() - 14; ++x) {
+            if (image.pixelColor(x, y) != theme::kSidebarBackground) {
+                ink = true;
+                break;
+            }
+        }
+    }
+    EXPECT_TRUE(ink) << "the screenshot-less tile paints nothing but background";
+}
+
 TEST(GameTileInput, clicking_a_tile_that_offers_an_action_names_its_game)
 {
     const auto tile = makeTile("doom");

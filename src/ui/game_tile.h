@@ -61,6 +61,7 @@ private:
     QString overlayMessage() const;
 
     QString slug_;
+    QString title_;
     QPixmap title_shot_;
     QPixmap gameplay_shot_;
 

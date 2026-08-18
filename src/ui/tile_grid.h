@@ -15,6 +15,8 @@
 
 #include <filesystem>
 
+class QLabel;
+
 namespace showroom {
 
 class GameTile;
@@ -42,6 +44,10 @@ signals:
 private:
     GridChrome chrome_;
     QVector<GameTile*> tiles_;
+
+    // Only exists when the catalogue is empty: the message that stands
+    // where the tiles would, instead of a bare dark window (aug-rrwq).
+    QLabel* empty_state_ = nullptr;
 };
 
 } // namespace showroom

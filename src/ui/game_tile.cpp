@@ -80,6 +80,7 @@ GameTile::GameTile(const GameDefinition& definition,
                    const std::filesystem::path& assets_dir, QWidget* parent)
         : QWidget(parent),
           slug_(QString::fromStdString(definition.slug())),
+          title_(QString::fromStdString(definition.title())),
           title_shot_(loadScreenshot(assets_dir, definition.screenshots().title)),
           gameplay_shot_(loadScreenshot(assets_dir, definition.screenshots().gameplay))
 {
@@ -254,6 +255,20 @@ void GameTile::paintEvent(QPaintEvent* /*event*/)
         const QPoint at((width() - scaled_.width()) / 2,
                         (height() - scaled_.height()) / 2);
         painter.drawPixmap(at, scaled_);
+    } else {
+        // A missing capture still names its game (aug-rrwq). Kept to the
+        // upper part of the tile so the overlay messages, which centre,
+        // stay clear of it.
+        painter.setFont(theme::uiFont(std::clamp(width() / 20, 10, 20),
+                                      QFont::DemiBold));
+        painter.setPen(theme::kMutedText);
+        const QRect name_area = rect().adjusted(14,
+                                                theme::kProgressHeightPx + 10,
+                                                -14,
+                                                -theme::kLegendHeightPx);
+        painter.drawText(name_area,
+                         Qt::AlignHCenter | Qt::AlignTop | Qt::TextWordWrap,
+                         title_);
     }
 
     if (hovered_ && actionFor(state_) != TileAction::None) {

@@ -78,6 +78,7 @@ qt_add_executable(showroom_ui_tests
   app/settings_tests.cpp
   ui/legend_bar_tests.cpp
   ui/game_tile_tests.cpp
+  ui/tile_grid_tests.cpp
   ui/main_window_tests.cpp
 )
 
