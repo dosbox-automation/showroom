@@ -117,6 +117,20 @@ protected:
     std::filesystem::path dir_;
 };
 
+TEST_F(ConfWriterDir, every_conf_captures_the_mouse_on_click_only)
+{
+    // Seamless capture leaves GNOME users with no visible cursor at all
+    // (aug-1fki); onclick keeps the host cursor until the game is
+    // clicked and a hotkey gives it back.
+    const auto game = parseOrDie(doomLikeToml());
+    std::string error;
+    const auto conf = ConfWriter::renderConf(game, dir_, error);
+    ASSERT_TRUE(conf) << error;
+
+    EXPECT_TRUE(hasLine(*conf, "[mouse]"));
+    EXPECT_TRUE(hasLine(*conf, "mouse_capture = onclick"));
+}
+
 TEST_F(ConfWriterDir, renders_engine_settings_from_the_definition)
 {
     const auto game = parseOrDie(doomLikeToml());

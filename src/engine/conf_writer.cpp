@@ -120,6 +120,10 @@ void renderEngineSettings(const GameDefinition& game, std::ostringstream& conf,
     const auto& sound = game.dosbox().sound;
     conf << "[sdl]\n"
          << "output = opengl\n\n";
+    // Seamless capture renders no visible cursor on GNOME compositors
+    // (aug-1fki); onclick works everywhere.
+    conf << "[mouse]\n"
+         << "mouse_capture = onclick\n\n";
     conf << "[dosbox]\n"
          << "machine = " << game.dosbox().machine << "\n";
     if (pin_injection_locale) {
