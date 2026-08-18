@@ -191,6 +191,39 @@ TEST(GameDefinition, reads_an_optional_source_size)
     EXPECT_FALSE(without->sources()[0].size.has_value());
 }
 
+TEST(GameDefinition, reads_an_optional_source_target_subdir)
+{
+    std::string error;
+    const auto game = GameDefinition::fromTomlString(
+            withReplacement("url = \"https://example.org/doom.7z\"",
+                            "url = \"https://example.org/doom.7z\"\n"
+                            "target_subdir = \"WACKY\""),
+            error);
+
+    ASSERT_TRUE(game.has_value()) << error;
+    EXPECT_EQ(game->sources()[0].target_subdir, "WACKY");
+
+    const auto without = GameDefinition::fromTomlString(minimalToml(), error);
+    ASSERT_TRUE(without.has_value()) << error;
+    EXPECT_FALSE(without->sources()[0].target_subdir.has_value());
+}
+
+TEST(GameDefinition, rejects_a_target_subdir_that_is_not_a_safe_component)
+{
+    // A traversal or a nested path here would hand archive content a
+    // write location outside the staging directory.
+    for (const char* hostile : {"../evil", "a/b", "..", ".", ""}) {
+        std::string error;
+        const auto game = GameDefinition::fromTomlString(
+                withReplacement("url = \"https://example.org/doom.7z\"",
+                                std::string("url = \"https://example.org/doom.7z\"\n"
+                                            "target_subdir = \"")
+                                        + hostile + "\""),
+                error);
+        EXPECT_FALSE(game.has_value()) << "accepted: " << hostile;
+    }
+}
+
 TEST(GameDefinition, rejects_a_negative_source_size)
 {
     std::string error;

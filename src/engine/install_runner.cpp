@@ -200,6 +200,13 @@ bool InstallRunner::startInstall(const GameDefinition& game, std::string& error)
             error = "cannot create staging dir: " + staging_dir_.string();
             return false;
         }
+        direct_extract_dir_ = plan->target_subdir.has_value()
+                                    ? staging_dir_ / *plan->target_subdir
+                                    : staging_dir_;
+        if (!isWithin(staging_dir_, direct_extract_dir_)) {
+            error = "target subdir escapes the staging dir";
+            return false;
+        }
         game_ = game;
         slug_ = QString::fromStdString(game.slug());
         phase_ = Phase::Direct;
@@ -299,7 +306,7 @@ void InstallRunner::runDirectInstall()
     if (phase_ != Phase::Direct) {
         return;
     }
-    const auto result = extractor_.extract(archive_, staging_dir_);
+    const auto result = extractor_.extract(archive_, direct_extract_dir_);
     if (!result.ok) {
         failInstall("extraction failed: " + QString::fromStdString(result.error));
         return;

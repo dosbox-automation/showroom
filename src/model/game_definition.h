@@ -30,6 +30,9 @@ struct GameSource {
     std::optional<std::string> sha256;
     // Archive size in bytes, for the pre-download free-space check.
     std::optional<std::uint64_t> size;
+    // Where a flat archive belongs under the install root, for mirrors
+    // whose layout lacks the canonical game directory (aug-ctpt).
+    std::optional<std::string> target_subdir;
 };
 
 struct DosboxSound {

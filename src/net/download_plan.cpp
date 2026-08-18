@@ -27,8 +27,11 @@ std::vector<DownloadPlan> downloadPlansFor(const GameDefinition& game)
         if (filename.empty()) {
             continue;
         }
-        plans.push_back(
-                DownloadPlan{source.url, filename, source.size, source.install_type});
+        plans.push_back(DownloadPlan{source.url,
+                                     filename,
+                                     source.size,
+                                     source.install_type,
+                                     source.target_subdir});
     }
     return plans;
 }

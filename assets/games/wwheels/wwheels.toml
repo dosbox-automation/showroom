@@ -29,6 +29,8 @@ role = "mirror"
 install_type = "unzip"
 url = "https://dosgames.com/files/DOSBOX_WACKY.ZIP"
 sha256 = "3c3c35bb696194b420c5156ac9641819213f01812801f5c1683817c8bb70f4a3"
+# The zip is flat; the canonical layout keeps the game under WACKY/.
+target_subdir = "WACKY"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.

@@ -462,6 +462,54 @@ TEST_F(InstallRunnerFixture, a_plain_archive_installs_without_engine_or_recipe)
     EXPECT_EQ(server_.shutdownRequests(), 0);
 }
 
+TEST_F(InstallRunnerFixture, a_source_with_a_target_subdir_extracts_into_it)
+{
+    // The wwheels mirror ships the game flat while the canonical layout
+    // (expected files, launch paths) puts it under WACKY/ (aug-ctpt).
+    fs::remove(games_ / "doom" / "recipe.lua");
+    extractor_.plant_install = true;
+
+    std::string parse_error;
+    const auto game = GameDefinition::fromTomlString(R"(slug = "doom"
+title = "DOOM"
+rank = 1
+license = "shareware"
+recipe_status = "done"
+
+[sources.primary]
+role = "primary"
+install_type = "unzip"
+url = "https://example.org/doom.7z"
+target_subdir = "WACKY"
+
+[dosbox]
+machine = "svga_s3"
+cpu_cycles = 12000
+cpu_cycles_protected = 12000
+
+[launch]
+executable = "DOOM.EXE"
+working_dir = "WACKY/GOLD/DOOM"
+
+[install]
+max_runtime_seconds = 30
+
+[install.expected_files]
+"WACKY/GOLD/DOOM/DOOM.EXE" = { size = 5 }
+)",
+                                                     parse_error);
+    ASSERT_TRUE(game) << parse_error;
+
+    QSignalSpy succeeded(runner_.get(), &InstallRunner::succeeded);
+    std::string error;
+    ASSERT_TRUE(runner_->startInstall(*game, error)) << error;
+
+    ASSERT_TRUE(pumpUntil(succeeded, 20000));
+    EXPECT_EQ(extractor_.last_destination, stagingDir() / "WACKY");
+    EXPECT_TRUE(fs::is_regular_file(cache_ / "installs" / "doom" / "WACKY" / "GOLD"
+                                    / "DOOM" / "DOOM.EXE"));
+}
+
 TEST_F(InstallRunnerFixture, the_overlay_lands_on_top_of_a_plain_archive_install)
 {
     extractor_.plant_install = true;

@@ -19,9 +19,10 @@ struct DownloadPlan {
     std::string url;
     std::string filename;
     std::optional<std::uint64_t> size;
-    // Travels with the plan because mirrors may install differently
+    // Travel with the plan because mirrors may install differently
     // than the primary (aug-ctpt).
     std::optional<InstallType> install_type;
+    std::optional<std::string> target_subdir;
 };
 
 // One plan per usable source, in the parser's role order, so primary

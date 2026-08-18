@@ -88,6 +88,9 @@ private:
     std::optional<GameDefinition> game_;
     QString slug_;
     std::filesystem::path archive_;
+    // Where the direct install unpacks: staging itself, or the source's
+    // target_subdir below it for flat mirror archives.
+    std::filesystem::path direct_extract_dir_;
     std::filesystem::path extracts_dir_;
     std::filesystem::path staging_dir_;
     QByteArray recipe_;

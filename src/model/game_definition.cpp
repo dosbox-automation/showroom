@@ -325,6 +325,14 @@ std::optional<GameDefinition> GameDefinition::fromTomlString(std::string_view te
         }
         source.filename = parser.optionalString(entry, "filename");
         source.sha256 = parser.optionalString(entry, "sha256");
+        if (const auto subdir = parser.optionalString(entry, "target_subdir")) {
+            if (subdir->empty() || sanitizedPathComponent(*subdir) != *subdir) {
+                error = "source " + source.role
+                      + ": target_subdir must be a single safe path component";
+                return std::nullopt;
+            }
+            source.target_subdir = *subdir;
+        }
         if (const auto* size = entry.get("size"); size != nullptr) {
             const auto value = size->value<std::int64_t>();
             if (!value || *value < 0) {
