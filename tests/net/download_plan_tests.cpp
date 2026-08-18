@@ -8,6 +8,8 @@
 
 #include <gtest/gtest.h>
 
+#include <filesystem>
+#include <fstream>
 #include <string>
 
 namespace showroom {
@@ -89,6 +91,80 @@ TEST(DownloadPlan, a_hostile_basename_produces_no_plan)
             "url = \"https://example.invalid/%2E%2E/archive.zip/..\"\n");
 
     EXPECT_FALSE(downloadPlanFor(game).has_value());
+}
+
+TEST(DownloadPlan, every_source_yields_a_plan_in_role_order_with_its_own_install_type)
+{
+    // classicdosgames.com served a wrong certificate for a day and three
+    // games with perfectly healthy mirrors stayed dead (aug-ctpt): the
+    // mirror entries must reach the downloader.
+    const auto game = gameWithSources(
+            "[sources.mirror]\n"
+            "role = \"mirror\"\n"
+            "install_type = \"unzip\"\n"
+            "url = \"https://mirror.invalid/DOSBOX_PROBE.ZIP\"\n"
+            "[sources.primary]\n"
+            "role = \"primary\"\n"
+            "install_type = \"unzipinstall\"\n"
+            "url = \"https://example.invalid/dir/probe.zip\"\n");
+
+    const auto plans = downloadPlansFor(game);
+    ASSERT_EQ(plans.size(), 2u);
+    EXPECT_EQ(plans[0].url, "https://example.invalid/dir/probe.zip");
+    EXPECT_EQ(plans[0].install_type, InstallType::UnzipInstall);
+    EXPECT_EQ(plans[1].url, "https://mirror.invalid/DOSBOX_PROBE.ZIP");
+    EXPECT_EQ(plans[1].filename, "DOSBOX_PROBE.ZIP");
+    EXPECT_EQ(plans[1].install_type, InstallType::Unzip);
+}
+
+TEST(DownloadPlan, an_unusable_source_is_skipped_rather_than_fatal)
+{
+    const auto game = gameWithSources(
+            "[sources.primary]\n"
+            "role = \"primary\"\n"
+            "url = \"https://example.invalid/dir/\"\n"
+            "[sources.mirror]\n"
+            "role = \"mirror\"\n"
+            "url = \"https://mirror.invalid/probe.zip\"\n");
+
+    const auto plans = downloadPlansFor(game);
+    ASSERT_EQ(plans.size(), 1u);
+    EXPECT_EQ(plans[0].url, "https://mirror.invalid/probe.zip");
+}
+
+TEST(DownloadPlan, the_archive_on_disk_names_the_plan_that_installs_it)
+{
+    // The installer must act on whichever source's file actually landed:
+    // the mirror's filename and install type differ from the primary's.
+    const auto game = gameWithSources(
+            "[sources.primary]\n"
+            "role = \"primary\"\n"
+            "install_type = \"unzipinstall\"\n"
+            "url = \"https://example.invalid/probe.zip\"\n"
+            "[sources.mirror]\n"
+            "role = \"mirror\"\n"
+            "install_type = \"unzip\"\n"
+            "url = \"https://mirror.invalid/DOSBOX_PROBE.ZIP\"\n");
+
+    const std::filesystem::path workspace(SHOWROOM_TEST_WORKSPACE);
+    const std::filesystem::path downloads = workspace / "plan-on-disk-probe";
+    std::filesystem::remove_all(downloads);
+    std::filesystem::create_directories(downloads);
+
+    EXPECT_FALSE(archivePlanOnDisk(game, downloads).has_value());
+
+    std::ofstream(downloads / "DOSBOX_PROBE.ZIP") << "zip";
+    const auto mirror_plan = archivePlanOnDisk(game, downloads);
+    ASSERT_TRUE(mirror_plan.has_value());
+    EXPECT_EQ(mirror_plan->install_type, InstallType::Unzip);
+
+    // With both on disk the primary outranks the mirror.
+    std::ofstream(downloads / "probe.zip") << "zip";
+    const auto primary_plan = archivePlanOnDisk(game, downloads);
+    ASSERT_TRUE(primary_plan.has_value());
+    EXPECT_EQ(primary_plan->install_type, InstallType::UnzipInstall);
+
+    std::filesystem::remove_all(downloads);
 }
 
 } // namespace

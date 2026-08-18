@@ -9,11 +9,14 @@
 #include "model/game_catalog.h"
 #include "model/step_sizer.h"
 #include "model/tile_state.h"
+#include "net/download_plan.h"
 
 #include <QMainWindow>
 
+#include <cstddef>
 #include <filesystem>
 #include <string>
+#include <vector>
 
 class QTimer;
 
@@ -78,6 +81,8 @@ private:
     void demoteDamagedTile(const GameDefinition& game);
     bool confirmPortNoticeIfNeeded();
     void startDownload(const GameDefinition& game);
+    bool startPlannedDownload();
+    void onDownloadFailed(const QString& reason);
     void startInstall(const GameDefinition& game);
     void setDownloadingTileState(TileState state);
 
@@ -119,6 +124,11 @@ private:
     // One transfer at a time; the downloader's signals carry no slug, so
     // the window remembers whose tile they belong to.
     std::string downloading_slug_;
+
+    // The source chain for the running transfer: a failure advances to
+    // the next plan before the tile gives up (aug-ctpt).
+    std::vector<DownloadPlan> downloading_plans_;
+    std::size_t downloading_plan_index_ = 0;
 
     // resizeEvent applies a step, which resizes the window, which arrives
     // back here.

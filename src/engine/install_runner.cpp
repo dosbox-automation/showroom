@@ -164,17 +164,20 @@ bool InstallRunner::startInstall(const GameDefinition& game, std::string& error)
         return false;
     }
 
-    const auto plan = downloadPlanFor(game);
-    if (!plan) {
+    if (downloadPlansFor(game).empty()) {
         error = "game \"" + game.slug() + "\" has no usable download source";
+        return false;
+    }
+    // Whichever source's archive actually landed decides the filename
+    // and the install type; the mirror's may differ from the primary's.
+    const auto plan = archivePlanOnDisk(game,
+                                        cache_base_ / "downloads" / game.slug());
+    if (!plan) {
+        error = "downloaded archive not found for \"" + game.slug() + "\"";
         return false;
     }
     archive_ = cache_base_ / "downloads" / game.slug() / plan->filename;
     std::error_code ec;
-    if (!std::filesystem::is_regular_file(archive_, ec)) {
-        error = "downloaded archive not found: " + archive_.string();
-        return false;
-    }
 
     const auto extracts_base = cache_base_ / "extracts";
     extracts_dir_ = ConfWriter::extractsDir(cache_base_, game.slug());
@@ -188,7 +191,7 @@ bool InstallRunner::startInstall(const GameDefinition& game, std::string& error)
         return false;
     }
 
-    if (game.sources().front().install_type == InstallType::Unzip) {
+    if (plan->install_type == InstallType::Unzip) {
         // Extraction is the whole install: no engine, no recipe. The
         // archive unpacks straight into staging, then the shared
         // verify-and-promote path takes over on the next loop turn.

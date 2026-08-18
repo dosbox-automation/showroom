@@ -164,13 +164,7 @@ MainWindow::MainWindow(const GameCatalog& catalog,
         connect(downloader_, &Downloader::finished, this, [this](const QString&) {
             setDownloadingTileState(TileState::Downloaded);
         });
-        connect(downloader_, &Downloader::failed, this, [this](const QString& reason) {
-            log_error(kLogComponent,
-                      "download of %s failed: %s",
-                      downloading_slug_.c_str(),
-                      reason.toStdString().c_str());
-            setDownloadingTileState(TileState::NotDownloaded);
-        });
+        connect(downloader_, &Downloader::failed, this, &MainWindow::onDownloadFailed);
         connect(downloader_, &Downloader::cancelled, this, [this]() {
             setDownloadingTileState(TileState::NotDownloaded);
         });
@@ -440,31 +434,71 @@ void MainWindow::startDownload(const GameDefinition& game)
         log_warn(kLogComponent, "download of %s blocked: offline", game.slug().c_str());
         return;
     }
-    const auto plan = downloadPlanFor(game);
-    const auto download_dir = Paths::downloadDirFor(game.slug());
-    if (!plan || !download_dir) {
+    auto plans = downloadPlansFor(game);
+    if (plans.empty()) {
         log_error(kLogComponent, "%s has no usable download source", game.slug().c_str());
         return;
     }
 
-    std::string error;
-    if (!downloader_->start(QUrl(QString::fromStdString(plan->url)),
-                            *download_dir / plan->filename,
-                            error,
-                            plan->size)) {
-        log_error(kLogComponent,
-                  "cannot download %s: %s",
-                  game.slug().c_str(),
-                  error.c_str());
+    downloading_slug_ = game.slug();
+    downloading_plans_ = std::move(plans);
+    downloading_plan_index_ = 0;
+    if (!startPlannedDownload()) {
+        downloading_slug_.clear();
+        downloading_plans_.clear();
         return;
     }
 
-    downloading_slug_ = game.slug();
     pushBusyCursor();
     if (GameTile* tile = grid_->tileFor(QString::fromStdString(game.slug()))) {
         tile->setState(TileState::Downloading);
         tile->setProgress(0);
     }
+}
+
+bool MainWindow::startPlannedDownload()
+{
+    const DownloadPlan& plan = downloading_plans_.at(downloading_plan_index_);
+    const auto download_dir = Paths::downloadDirFor(downloading_slug_);
+    if (!download_dir) {
+        log_error(kLogComponent,
+                  "%s has no usable download directory",
+                  downloading_slug_.c_str());
+        return false;
+    }
+    std::string error;
+    if (!downloader_->start(QUrl(QString::fromStdString(plan.url)),
+                            *download_dir / plan.filename,
+                            error,
+                            plan.size)) {
+        log_error(kLogComponent,
+                  "cannot download %s: %s",
+                  downloading_slug_.c_str(),
+                  error.c_str());
+        return false;
+    }
+    return true;
+}
+
+void MainWindow::onDownloadFailed(const QString& reason)
+{
+    log_error(kLogComponent,
+              "download of %s failed: %s",
+              downloading_slug_.c_str(),
+              reason.toStdString().c_str());
+
+    // Every remaining source gets its turn before the tile gives up
+    // (aug-ctpt).
+    while (downloading_plan_index_ + 1 < downloading_plans_.size()) {
+        ++downloading_plan_index_;
+        log_warn(kLogComponent,
+                 "%s: trying the next source",
+                 downloading_slug_.c_str());
+        if (startPlannedDownload()) {
+            return;
+        }
+    }
+    setDownloadingTileState(TileState::NotDownloaded);
 }
 
 void MainWindow::startInstall(const GameDefinition& game)
@@ -560,6 +594,8 @@ void MainWindow::setDownloadingTileState(TileState state)
         tile->setState(state);
     }
     downloading_slug_.clear();
+    downloading_plans_.clear();
+    downloading_plan_index_ = 0;
 }
 
 void MainWindow::onGameEnded(const QString& slug)

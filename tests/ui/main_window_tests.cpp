@@ -762,6 +762,110 @@ protected:
     GameCatalog two_games_;
 };
 
+// A game whose definition carries a mirror, for the fallback tests.
+class MirrorFixture : public LaunchFixture {
+protected:
+    void SetUp() override
+    {
+        LaunchFixture::SetUp();
+        const auto games_dir = std::filesystem::path(dir_.path().toStdString()) / "games";
+        std::filesystem::create_directories(games_dir / "zeta");
+        std::ofstream out(games_dir / "zeta" / "zeta.toml");
+        out << "slug = \"zeta\"\n"
+            << "title = \"Zeta\"\n"
+            << "rank = 1\n"
+            << "license = \"shareware\"\n"
+            << "[sources.primary]\n"
+            << "role = \"primary\"\n"
+            << "url = \"https://example.invalid/zeta.zip\"\n"
+            << "[sources.mirror]\n"
+            << "role = \"mirror\"\n"
+            << "url = \"https://mirror.invalid/ZETA_M.ZIP\"\n"
+            << "[dosbox]\n"
+            << "machine = \"svga_s3\"\n"
+            << "cpu_cycles = 3000\n"
+            << "cpu_cycles_protected = 3000\n"
+            << "[launch]\n"
+            << "executable = \"ZETA.EXE\"\n"
+            << "[install]\n"
+            << "max_runtime_seconds = 60\n";
+        out.close();
+        one_game_ = GameCatalog::loadFromDirectory(games_dir);
+        ASSERT_EQ(one_game_.size(), 1u);
+    }
+
+    GameCatalog one_game_;
+};
+
+TEST_F(MirrorFixture, a_failed_primary_falls_back_to_the_mirror)
+{
+    // Three games with healthy mirrors stayed dead while their primary
+    // host served a bad certificate (aug-ctpt).
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    ScriptedWindow window(one_game_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader);
+    GameTile* tile = window.grid()->tileFor("zeta");
+    QTest::mouseClick(tile, Qt::LeftButton);
+    ASSERT_EQ(downloader.starts, 1);
+    ASSERT_EQ(downloader.last_url.toString(),
+              QStringLiteral("https://example.invalid/zeta.zip"));
+
+    downloader.simulateFailed(QStringLiteral("bad certificate"));
+
+    EXPECT_EQ(downloader.starts, 2);
+    EXPECT_EQ(downloader.last_url.toString(),
+              QStringLiteral("https://mirror.invalid/ZETA_M.ZIP"));
+    EXPECT_EQ(tile->state(), TileState::Downloading);
+
+    downloader.simulateFinished(QStringLiteral("ZETA_M.ZIP"));
+    EXPECT_EQ(tile->state(), TileState::Downloaded);
+}
+
+TEST_F(MirrorFixture, when_every_source_fails_the_tile_returns_to_not_downloaded)
+{
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    ScriptedWindow window(one_game_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader);
+    GameTile* tile = window.grid()->tileFor("zeta");
+    QTest::mouseClick(tile, Qt::LeftButton);
+
+    downloader.simulateFailed(QStringLiteral("bad certificate"));
+    downloader.simulateFailed(QStringLiteral("mirror down too"));
+
+    EXPECT_EQ(downloader.starts, 2);
+    EXPECT_EQ(tile->state(), TileState::NotDownloaded);
+}
+
+TEST_F(MirrorFixture, a_cancel_stops_the_chain_without_trying_the_mirror)
+{
+    // The user said stop; the mirror is for failures, not for cancels.
+    FakeLauncher launcher;
+    FakeDownloader downloader;
+    ScriptedWindow window(one_game_,
+                          assetsDir(),
+                          settings(),
+                          sizer(),
+                          &launcher,
+                          &downloader);
+    GameTile* tile = window.grid()->tileFor("zeta");
+    QTest::mouseClick(tile, Qt::LeftButton);
+
+    downloader.simulateCancelled();
+
+    EXPECT_EQ(downloader.starts, 1);
+    EXPECT_EQ(tile->state(), TileState::NotDownloaded);
+}
+
 TEST_F(DownloadFixture, download_on_a_not_downloaded_tile_starts_the_transfer)
 {
     FakeLauncher launcher;
