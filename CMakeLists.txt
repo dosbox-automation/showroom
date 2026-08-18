@@ -23,7 +23,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL
 
 project(dosbox-automation-showroom
   LANGUAGES CXX
-  VERSION 0.1.0
+  VERSION 0.1.1
 )
 
 set(CMAKE_CXX_STANDARD 23)

@@ -2,18 +2,25 @@
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "dosbox-automation-showroom",
   "description": "Desktop showcase that installs and launches curated DOS games through a bundled dosbox-automation.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "dependencies": [
-    {
-      "name": "qtbase",
-      "features": [
-        "network",
-        "widgets"
-      ]
-    },
     "gtest",
     "libarchive",
     "tomlplusplus"
   ],
+  "features": {
+    "vcpkg-qt": {
+      "description": "Build Qt from vcpkg instead of using a system or aqtinstall Qt",
+      "dependencies": [
+        {
+          "name": "qtbase",
+          "features": [
+            "network",
+            "widgets"
+          ]
+        }
+      ]
+    }
+  },
   "builtin-baseline": "8defa4b8bc4c35071c678e87a0e140dd433489bb"
 }
