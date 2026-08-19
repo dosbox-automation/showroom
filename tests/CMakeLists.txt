@@ -49,6 +49,7 @@ qt_add_executable(showroom_engine_tests
   net/archive_extractor_tests.cpp
   net/download_plan_tests.cpp
   net/downloader_tests.cpp
+  net/file_time_tests.cpp
   net/file_verifier_tests.cpp
 )
 

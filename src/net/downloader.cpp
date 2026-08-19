@@ -5,6 +5,7 @@
 #include "net/downloader.h"
 
 #include "app/logging.h"
+#include "net/file_time.h"
 
 #include <QDateTime>
 #include <QNetworkRequest>
@@ -224,9 +225,8 @@ void Downloader::finishTransfer()
     }
 
     if (last_modified.isValid()) {
-        const auto stamp = std::chrono::clock_cast<std::chrono::file_clock>(
-                std::chrono::sys_seconds(
-                        std::chrono::seconds(last_modified.toSecsSinceEpoch())));
+        const auto stamp = fileTimeFromSys(std::chrono::system_clock::time_point(
+                std::chrono::seconds(last_modified.toSecsSinceEpoch())));
         std::filesystem::last_write_time(destination_, stamp, ec);
     }
 

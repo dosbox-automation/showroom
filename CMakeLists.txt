@@ -44,6 +44,17 @@ else()
   add_compile_options(-Wall -Wextra -Wpedantic -Werror=return-type)
 endif()
 
+# Symbols on the real release image, codegen left untouched, so a crash
+# dump maps to source without changing what crashes (aug-qerw).
+option(OPT_PDB "Emit PDB debug info for release diagnostics (Windows ClangCL)")
+if (OPT_PDB)
+  if (NOT MSVC)
+    message(FATAL_ERROR "OPT_PDB is only for the Windows ClangCL build")
+  endif()
+  add_compile_options(/Zi)
+  add_link_options(/DEBUG /OPT:REF /OPT:ICF)
+endif()
+
 # Pure logic and infrastructure, no Qt: this carries the test weight and
 # both the application and the test binary link it.
 add_library(showroom_model STATIC
@@ -70,6 +81,7 @@ qt_add_library(showroom_engine STATIC
   src/net/connectivity.cpp
   src/net/download_plan.cpp
   src/net/downloader.cpp
+  src/net/file_time.cpp
   src/net/file_verifier.cpp
   src/engine/engine_process.cpp
   src/engine/game_launcher.cpp
