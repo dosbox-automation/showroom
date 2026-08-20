@@ -27,7 +27,8 @@
             "network",
             "widgets"
           ]
-        }
+        },
+        "qtsvg"
       ]
     }
   },

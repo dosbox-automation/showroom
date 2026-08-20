@@ -33,6 +33,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # 6.4 is the baseline the code may rely on. Raising it cuts off older
 # distribution Qt builds, so check the build VMs before bumping.
 find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets Network)
+find_package(Qt6 QUIET COMPONENTS Svg)
 find_package(tomlplusplus CONFIG REQUIRED)
 find_package(LibArchive REQUIRED)
 
@@ -124,6 +125,10 @@ target_link_libraries(showroom_ui PUBLIC
   Qt6::Widgets
   Qt6::Network
 )
+
+if (TARGET Qt6::Svg)
+  target_link_libraries(showroom_ui PUBLIC Qt6::Svg)
+endif()
 
 # Build scripts pass this in; synced trees on the build VMs carry no
 # .git, so the configure-time lookup is only the developer fallback.
