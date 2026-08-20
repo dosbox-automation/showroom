@@ -27,12 +27,13 @@ install_type = "exeinstall"
 url = "https://archive.org/download/one-must-fall-2097-shareware-jukebox-collection"
 sha256 = "c7204fa3482bc77b46f27efcc733456c056d666171fa62088649da222d412097"
 
-# Starting point from the drive rig, which ran every game at these
-# settings. Tune per game where the game needs it.
+# Digital music needs the CPU headroom, and at 12000 the installer's
+# extractor ran too slow to reach "is now installed" inside the recipe
+# wait window.
 [dosbox]
 machine = "svga_s3"
-cpu_cycles = 12000
-cpu_cycles_protected = 12000
+cpu_cycles = 24000
+cpu_cycles_protected = 24000
 
 [dosbox.sound]
 sblaster_type = "sb16"
