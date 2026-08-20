@@ -772,6 +772,33 @@ TEST_F(InstallConfDir, write_lands_the_iso_install_conf_at_the_cache_base)
     EXPECT_EQ(*written, dir_ / "install.conf");
 }
 
+// doom's primary is a .7z (floppyinstall); when it 500s, the iso mirror
+// is used instead. The conf must follow the source that actually landed,
+// not the primary, or the iso is handed to the floppy path and fails.
+TEST_F(InstallConfDir, follows_the_downloaded_source_type_over_the_primary)
+{
+    const auto game = parseOrDie(doomLikeToml("svga_s3", "floppyinstall"));
+    // Only an iso landed - the mirror, after the floppy primary failed.
+    addDownloadedFile("SHAREWARE.iso");
+    std::string error;
+    const auto image = (dir_ / "downloads" / "doom" / "SHAREWARE.iso").string();
+
+    // Without the downloaded type, the primary (floppy) drives it, finds
+    // no floppy image, and the install cannot be built.
+    EXPECT_FALSE(ConfWriter::downloadIsMedium(game, dir_));
+    EXPECT_FALSE(ConfWriter::renderInstallConf(game, dir_, error));
+
+    // Told the iso mirror is what downloaded, it mounts as cdrom.
+    EXPECT_TRUE(
+            ConfWriter::downloadIsMedium(game, dir_, showroom::InstallType::IsoInstall));
+    const auto conf = ConfWriter::renderInstallConf(game,
+                                                    dir_,
+                                                    error,
+                                                    showroom::InstallType::IsoInstall);
+    ASSERT_TRUE(conf) << error;
+    EXPECT_TRUE(hasLine(*conf, "mount d \"" + image + "\" -t cdrom"));
+}
+
 TEST_F(InstallConfDir, write_lands_the_install_conf_inside_the_extracts_dir)
 {
     // If this path ever moves out of the extracts dir, multi-disk

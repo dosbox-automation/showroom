@@ -341,7 +341,7 @@ std::optional<std::filesystem::path> ConfWriter::writeConf(
 
 std::optional<std::string> ConfWriter::renderInstallConf(
         const GameDefinition& game, const std::filesystem::path& cache_base,
-        std::string& error)
+        std::string& error, std::optional<InstallType> downloaded_type)
 {
     error.clear();
     if (!validateConfDir(cache_base, "cache base", error)) {
@@ -354,7 +354,8 @@ std::optional<std::string> ConfWriter::renderInstallConf(
         error = "game \"" + game.slug() + "\" has no sources";
         return std::nullopt;
     }
-    const auto install_type = game.sources().front().install_type;
+    const auto install_type =
+            downloaded_type ? downloaded_type : game.sources().front().install_type;
     if (!install_type) {
         error = "primary source of \"" + game.slug() + "\" has no install type";
         return std::nullopt;
@@ -396,12 +397,14 @@ std::optional<std::string> ConfWriter::renderInstallConf(
 }
 
 bool ConfWriter::downloadIsMedium(const GameDefinition& game,
-                                  const std::filesystem::path& cache_base)
+                                  const std::filesystem::path& cache_base,
+                                  std::optional<InstallType> downloaded_type)
 {
     if (game.sources().empty()) {
         return false;
     }
-    const auto install_type = game.sources().front().install_type;
+    const auto install_type =
+            downloaded_type ? downloaded_type : game.sources().front().install_type;
     if (!install_type) {
         return false;
     }
@@ -416,13 +419,13 @@ bool ConfWriter::downloadIsMedium(const GameDefinition& game,
 
 std::optional<std::filesystem::path> ConfWriter::writeInstallConf(
         const GameDefinition& game, const std::filesystem::path& cache_base,
-        std::string& error)
+        std::string& error, std::optional<InstallType> downloaded_type)
 {
-    const auto conf = renderInstallConf(game, cache_base, error);
+    const auto conf = renderInstallConf(game, cache_base, error, downloaded_type);
     if (!conf) {
         return std::nullopt;
     }
-    const auto target_dir = downloadIsMedium(game, cache_base)
+    const auto target_dir = downloadIsMedium(game, cache_base, downloaded_type)
                                   ? cache_base
                                   : extractsDir(cache_base, game.slug());
     return writeConfFile(target_dir, "install.conf", *conf, error);

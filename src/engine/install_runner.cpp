@@ -231,13 +231,15 @@ bool InstallRunner::startInstall(const GameDefinition& game, std::string& error)
     // A download that is the medium mounts from downloads/ in place, so
     // there is nothing to extract - and handing a disk image to the
     // extractor fails outright (aug-p0kd).
-    if (!ConfWriter::downloadIsMedium(game, cache_base_)) {
+    // The source that actually downloaded may be a mirror of a different
+    // install type than the primary; every decision below follows the
+    // landed plan, not sources().front() (aug-qerw doom.iso).
+    if (!ConfWriter::downloadIsMedium(game, cache_base_, plan->install_type)) {
         const bool extracted = std::filesystem::is_directory(extracts_dir_, ec)
                             && std::filesystem::directory_iterator(extracts_dir_, ec)
                                        != std::filesystem::directory_iterator();
         if (!extracted) {
-            const auto result = game.sources().front().install_type
-                                             == InstallType::ExeInstall
+            const auto result = plan->install_type == InstallType::ExeInstall
                                       ? copySelfExtractor(archive_,
                                                           extracts_dir_ / plan->filename)
                                       : extractor_.extract(archive_, extracts_dir_);
@@ -257,7 +259,8 @@ bool InstallRunner::startInstall(const GameDefinition& game, std::string& error)
         return false;
     }
 
-    const auto conf = ConfWriter::writeInstallConf(game, cache_base_, error);
+    const auto conf =
+            ConfWriter::writeInstallConf(game, cache_base_, error, plan->install_type);
     if (!conf) {
         return false;
     }
