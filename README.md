@@ -186,7 +186,10 @@ selection. All sixteen recipes live in [assets/games/](assets/games/).
 
 ## System requirements
 
-The combo packages are built on AlmaLinux 8 and require glibc 2.27 or
+**Windows:** Windows 10 or newer. Windows 7 may work but is untested -
+feedback welcome.
+
+**Linux:** The combo packages are built on AlmaLinux 8 and require glibc 2.27 or
 newer. Any Linux distribution from roughly 2018 onward should work. To
 check your version:
 
@@ -259,7 +262,7 @@ authors and publishers released for free redistribution.
 
 [gpl-badge]: https://img.shields.io/badge/license-GPL--3.0--or--later-blue
 [download-badge]: https://img.shields.io/badge/download-showroom-green
-[showroom-releases]: https://github.com/dosbox-automation/dosbox-automation-showroom/releases
+[showroom-releases]: https://github.com/dosbox-automation/showroom/releases
 [engine-badge]: https://img.shields.io/badge/get-dosbox--automation-orange
 [engine-releases]: https://github.com/dosbox-automation/dosbox-automation/releases
 
