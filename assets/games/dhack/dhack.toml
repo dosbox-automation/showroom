@@ -26,6 +26,8 @@ role = "mirror"
 install_type = "unzip"
 url = "https://dosgames.com/files/hackdemo.zip"
 sha256 = "1f823603b0d8b1720a661ad2c900665572334e68491e46d67e1d17760dea905b"
+# This zip is flat; the primary keeps the game under HACKDEMO/.
+target_subdir = "HACKDEMO"
 
 # Starting point from the drive rig, which ran every game at these
 # settings. Tune per game where the game needs it.
