@@ -7,8 +7,8 @@
 
 namespace showroom {
 
-// Tracks the application, not the engine it demonstrates.
 inline constexpr const char* kShowroomVersion = SHOWROOM_VERSION;
+inline constexpr const char* kPartNumber = "SJ-PRG-0487";
 
 // The badge in the sidebar, set at configure time until a running engine
 // can be asked what it is.

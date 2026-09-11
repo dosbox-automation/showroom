@@ -27,10 +27,11 @@ int main(int argc, char* argv[])
     // Answered before QApplication so both work with no display server.
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--version") == 0) {
-            std::printf("dosbox-automation-showroom, version %s (%s)\n"
+            std::printf("dosbox-automation-showroom, version %s (%s, %s)\n"
                         "bundled engine: dosbox-automation %s\n",
                         showroom::kShowroomVersion,
                         showroom::kShowroomGitHash,
+                        showroom::kPartNumber,
                         showroom::kBundledEngineVersion);
             return 0;
         }
