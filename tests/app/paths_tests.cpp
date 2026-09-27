@@ -130,9 +130,9 @@ TEST_F(PathsFixture, a_missing_engine_binary_override_falls_back)
 TEST_F(PathsFixture, the_engine_binary_defaults_to_beside_the_executable)
 {
 #ifdef _WIN32
-    const std::filesystem::path expected_name = "dosbox.exe";
+    const std::filesystem::path expected_name = "dosbox-automation.exe";
 #else
-    const std::filesystem::path expected_name = "dosbox";
+    const std::filesystem::path expected_name = "dosbox-automation";
 #endif
     const auto path = Paths::engineBinary();
     EXPECT_EQ(path.filename(), expected_name);

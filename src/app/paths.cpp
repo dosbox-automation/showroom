@@ -128,9 +128,9 @@ std::filesystem::path Paths::engineBinary()
                  override_path);
     }
 #ifdef _WIN32
-    constexpr const char* kEngineName = "dosbox.exe";
+    constexpr const char* kEngineName = "dosbox-automation.exe";
 #else
-    constexpr const char* kEngineName = "dosbox";
+    constexpr const char* kEngineName = "dosbox-automation";
 #endif
     return fromQString(QCoreApplication::applicationDirPath()) / kEngineName;
 }

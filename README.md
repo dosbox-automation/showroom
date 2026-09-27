@@ -46,7 +46,7 @@ engine alongside the showroom application.
 - Combo AppImage
 
 **Windows:**
-- Combo portable zip (dosbox.exe + showroom.exe, run from any folder)
+- Combo portable zip (dosbox-automation.exe + showroom.exe, run from any folder)
 - Showroom standalone zip (for use with an existing engine install)
 
 Downloads are on the [releases page](../../releases).
@@ -59,7 +59,7 @@ Downloads are on the [releases page](../../releases).
 defaults to the showroom. Pass `--engine` to run dosbox-automation directly.
 
 **(Windows) portable zip:** extract and run `showroom.exe`. The engine
-(`dosbox.exe`) must be in the same folder, which it is in the combo zip.
+(`dosbox-automation.exe`) must be in the same folder, which it is in the combo zip.
 
 Showroom needs on the first run a dosbox-automation API token and will write it to `~/.config/dosbox-automation/webserver/api_token` on its first
 start with the webserver enabled. Afterwards, it will read out automatically.

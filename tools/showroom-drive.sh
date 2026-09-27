@@ -18,7 +18,7 @@ CACHE_DIR="$REPO_ROOT/.games-cache"
 DRIVE_DIR="$CACHE_DIR/.drive"
 RECORDINGS_DIR="$CACHE_DIR/recordings"
 
-DOSBOX="${DOSBOX:-$HOME/Projects/augrudottir/augrudottir-dosbox-automation/build/release-linux/dosbox}"
+DOSBOX="${DOSBOX:-$HOME/Projects/augrudottir/augrudottir-dosbox-automation/build/release-linux/dosbox-automation}"
 PORT="${SHOWROOM_DRIVE_PORT:-8386}"
 API="http://localhost:$PORT/api/v1"
 PRIMARY_CONF="$HOME/.config/dosbox-automation/dosbox-automation.conf"
